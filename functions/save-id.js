@@ -1,6 +1,6 @@
 const { getStore } = require("@netlify/blobs");
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => { // contextを追加
     const headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type",
@@ -10,9 +10,14 @@ exports.handler = async (event) => {
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
 
     try {
-        console.log("受信データ:", event.body); // これでNetlifyのログに中身が出る
         const data = JSON.parse(event.body);
-        const store = getStore("customer_ids");
+        
+        // contextから自動的にデプロイ情報を取得してストアを開く
+        const store = getStore({
+            name: "customer_ids",
+            siteID: process.env.SITE_ID,
+            token: process.env.NETLIFY_AUTH_TOKEN
+        });
 
         let list = await store.get("list", { type: "json" }) || [];
         list.push({
@@ -26,7 +31,7 @@ exports.handler = async (event) => {
         await store.setJSON("list", list);
         return { statusCode: 200, headers, body: "OK" };
     } catch (e) {
-        console.error("エラー詳細:", e.message);
+        console.error("Save Error:", e.message);
         return { statusCode: 500, headers, body: e.message };
     }
 };
