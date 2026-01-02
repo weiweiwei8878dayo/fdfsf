@@ -1,11 +1,11 @@
 const { getStore } = require("@netlify/blobs");
 
 exports.handler = async (event) => {
-    // 1. パスワード判定
-    const ADMIN_PASSWORD = "yudai2011"; 
+    const ADMIN_PASSWORD = "yudai2011";
     const queryPw = event.queryStringParameters.pw;
 
-    if (!queryPw || queryPw !== ADMIN_PASSWORD) {
+    // 1. パスワードチェック
+    if (queryPw !== ADMIN_PASSWORD) {
         return { 
             statusCode: 403, 
             headers: { "Content-Type": "application/json" },
@@ -14,27 +14,33 @@ exports.handler = async (event) => {
     }
 
     try {
-        // 2. Blobからデータを取得
-        // ※ Store名を Bot側と同じ "customer_ids" に固定します
+        // 2. ストアの取得
+        // 手動デプロイの場合、明示的に名前を指定する必要があります
         const store = getStore("customer_ids");
-        const list = await store.get("list", { type: "json" });
         
-        // データが空（まだ誰も依頼していない）の場合は空配列を返す
-        const data = list || [];
+        // 3. データの取得（存在しない場合はnullが返る）
+        const list = await store.get("list", { type: "json" });
 
         return {
             statusCode: 200,
             headers: { 
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*" // ブラウザからのアクセスを許可
+                "Access-Control-Allow-Origin": "*" 
             },
-            body: JSON.stringify(data)
+            // リストが空（null/undefined）なら空配列 [] を返す
+            body: JSON.stringify(list || [])
         };
     } catch (e) {
-        // エラー内容を画面に返す（デバッグ用）
+        // 500エラーの詳細をブラウザに書き出す
+        console.error("Blob Error:", e);
         return { 
             statusCode: 500, 
-            body: JSON.stringify({ error: e.message }) 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                error: "Internal Server Error", 
+                message: e.message,
+                details: "Netlify Blobs might not be enabled for this site."
+            }) 
         };
     }
 };
