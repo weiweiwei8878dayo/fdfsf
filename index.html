@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ID管理本部</title>
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; padding: 40px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
+        .ban-badge { background: #ef4444; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border-bottom: 1px solid #334155; padding: 15px; text-align: left; }
+        input { width: 100%; padding: 10px; background: #334155; border: none; color: white; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📊 にゃんこ代行 ID管理データベース</h1>
+        <input type="text" id="search" placeholder="ユーザーIDまたは名前で検索...">
+        <table>
+            <thead>
+                <tr><th>日付</th><th>ユーザー名</th><th>ユーザーID</th><th>金額</th><th>BAN保証</th></tr>
+            </thead>
+            <tbody id="result"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function fetchIds() {
+            const res = await fetch("/.netlify/functions/get-ids");
+            const list = await res.json();
+            const container = document.getElementById("result");
+            container.innerHTML = list.reverse().map(item => `
+                <tr>
+                    <td>${new Date(item.date).toLocaleDateString()}</td>
+                    <td>${item.userName}</td>
+                    <td><code>${item.userId}</code></td>
+                    <td>${item.amount}円</td>
+                    <td>${item.banOption === 'yes' ? '<span class="ban-badge">🛡️ 保証あり</span>' : 'なし'}</td>
+                </tr>
+            `).join('');
+        }
+        fetchIds();
+    </script>
+</body>
+</html>
