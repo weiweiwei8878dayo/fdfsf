@@ -2,7 +2,7 @@ const { getStore } = require("@netlify/blobs");
 
 exports.handler = async (event) => {
     // あなたが設定するパスワード
-    const ADMIN_PASSWORD = "ここにパスワードを設定"; 
+    const ADMIN_PASSWORD = "yudai2011"; 
     
     const queryPw = event.queryStringParameters.pw;
 
