@@ -1,0 +1,8 @@
+[build]
+  functions = "functions"
+  publish = "."
+
+[[redirects]]
+  from = "/i/yudai2011"
+  to = "/index.html?id=yudai2011"
+  status = 200
