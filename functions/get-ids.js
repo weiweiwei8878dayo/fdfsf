@@ -1,34 +1,40 @@
 const { getStore } = require("@netlify/blobs");
 
 exports.handler = async (event) => {
-    // ⚠️【ここを必ず変更】Bot側と一文字一句同じにしてください
+    // 1. パスワード判定
     const ADMIN_PASSWORD = "yudai2011"; 
-    
-    // URLの ?pw=xxx から取得
     const queryPw = event.queryStringParameters.pw;
-
-    console.log("Received PW:", queryPw); // デバッグ用
 
     if (!queryPw || queryPw !== ADMIN_PASSWORD) {
         return { 
             statusCode: 403, 
-            body: JSON.stringify({ error: "パスワードが正しくありません" }),
-            headers: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ error: "Forbidden" }) 
         };
     }
 
     try {
+        // 2. Blobからデータを取得
+        // ※ Store名を Bot側と同じ "customer_ids" に固定します
         const store = getStore("customer_ids");
-        const list = await store.get("list", { type: "json" }) || [];
+        const list = await store.get("list", { type: "json" });
+        
+        // データが空（まだ誰も依頼していない）の場合は空配列を返す
+        const data = list || [];
+
         return {
             statusCode: 200,
             headers: { 
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*" 
+                "Access-Control-Allow-Origin": "*" // ブラウザからのアクセスを許可
             },
-            body: JSON.stringify(list)
+            body: JSON.stringify(data)
         };
     } catch (e) {
-        return { statusCode: 500, body: JSON.stringify({ error: "サーバーエラー" }) };
+        // エラー内容を画面に返す（デバッグ用）
+        return { 
+            statusCode: 500, 
+            body: JSON.stringify({ error: e.message }) 
+        };
     }
 };
