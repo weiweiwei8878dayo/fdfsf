@@ -1,45 +1,72 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>ID管理</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代行管理パネル</title>
     <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; background: #1e293b; }
-        th, td { border: 1px solid #334155; padding: 10px; text-align: left; }
-        .ban { color: #ff4444; font-weight: bold; border: 1px solid #ff4444; padding: 2px 5px; }
+        body { background: #0f172a; color: #eee; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
+        th { color: #94a3b8; font-size: 0.9em; }
+        .status-yes { color: #22c55e; font-weight: bold; }
+        .status-no { color: #94a3b8; }
+        .loading { text-align: center; color: #64748b; }
     </style>
 </head>
 <body>
-    <div id="main" style="display:none;">
-        <h2>📋 顧客・にゃんこIDリスト</h2>
-        <table id="table">
-            <thead><tr><th>日付</th><th>名前</th><th>ID</th><th>金額</th><th>BAN保証</th></tr></thead>
-            <tbody id="body"></tbody>
-        </table>
+    <div class="container">
+        <h1>🐈 代行依頼リスト</h1>
+        <div class="card">
+            <table id="list-table">
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>ユーザー</th>
+                        <th>金額</th>
+                        <th>BAN保証</th>
+                    </tr>
+                </thead>
+                <tbody id="list-body">
+                    <tr><td colspan="4" class="loading">読み込み中...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div id="err">アクセス権限がありません。</div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const pass = urlParams.get('id');
+        const params = new URLSearchParams(window.location.search);
+        const pw = params.get('id');
 
-        if (pass === 'yudai2011') {
-            document.getElementById('err').style.display = 'none';
-            document.getElementById('main').style.display = 'block';
-            fetch(`/.netlify/functions/get-ids?pw=${pass}`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('body').innerHTML = data.reverse().map(item => `
-                        <tr>
-                            <td>${new Date(item.date).toLocaleDateString()}</td>
-                            <td>${item.userName}</td>
-                            <td><code>${item.userId}</code></td>
-                            <td>${item.amount}円</td>
-                            <td>${item.banOption === 'yes' ? '<span class="ban">🛡️ 要予備垢</span>' : 'なし'}</td>
-                        </tr>
-                    `).join('');
+        async function loadList() {
+            if (pw !== 'yudai2011') {
+                document.body.innerHTML = '<h1>アクセス拒否</h1>';
+                return;
+            }
+            try {
+                const res = await fetch(`/.netlify/functions/get-ids?pw=${pw}`);
+                const data = await res.json();
+                const body = document.getElementById('list-body');
+                body.innerHTML = data.length ? '' : '<tr><td colspan="4">依頼はありません</td></tr>';
+                
+                data.reverse().forEach(item => {
+                    const row = `<tr>
+                        <td>${new Date(item.date).toLocaleDateString()}</td>
+                        <td>${item.userName}</td>
+                        <td>${item.amount}円</td>
+                        <td class="${item.banOption === 'yes' ? 'status-yes' : 'status-no'}">
+                            ${item.banOption === 'yes' ? '🛡️ あり' : 'なし'}
+                        </td>
+                    </tr>`;
+                    body.innerHTML += row;
                 });
+            } catch (e) {
+                document.getElementById('list-body').innerHTML = '<tr><td colspan="4">通信エラー</td></tr>';
+            }
         }
+        loadList();
     </script>
 </body>
 </html>
