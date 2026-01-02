@@ -1,10 +1,14 @@
 const { getStore } = require("@netlify/blobs");
 
 exports.handler = async (event) => {
-    // URLの ?pw=yudai2011 をチェック
+    const headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json"
+    };
+
     const pw = event.queryStringParameters.pw;
     if (pw !== "yudai2011") {
-        return { statusCode: 403, body: " Forbidden" };
+        return { statusCode: 403, headers, body: JSON.stringify({ error: "Forbidden" }) };
     }
 
     try {
@@ -13,13 +17,10 @@ exports.handler = async (event) => {
 
         return {
             statusCode: 200,
-            headers: { 
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*" 
-            },
+            headers,
             body: JSON.stringify(list || [])
         };
     } catch (e) {
-        return { statusCode: 200, body: JSON.stringify([]) };
+        return { statusCode: 200, headers, body: JSON.stringify([]) };
     }
 };
