@@ -1,7 +1,6 @@
 const { getStore } = require("@netlify/blobs");
 
 exports.handler = async (event) => {
-    // 通信の許可設定 (CORS)
     const headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type",
@@ -10,19 +9,12 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
 
-    // POST以外は拒否
-    if (event.httpMethod !== "POST") {
-        return { statusCode: 405, headers, body: "Method Not Allowed" };
-    }
-
     try {
+        console.log("受信データ:", event.body); // これでNetlifyのログに中身が出る
         const data = JSON.parse(event.body);
         const store = getStore("customer_ids");
 
-        // 既存のリストを読み込む
         let list = await store.get("list", { type: "json" }) || [];
-
-        // 新しいデータを追加
         list.push({
             userId: data.userId,
             userName: data.userName,
@@ -31,12 +23,10 @@ exports.handler = async (event) => {
             date: data.date || new Date().toISOString()
         });
 
-        // 保存
         await store.setJSON("list", list);
-
-        return { statusCode: 200, headers, body: JSON.stringify({ status: "success" }) };
+        return { statusCode: 200, headers, body: "OK" };
     } catch (e) {
-        console.error("Save Error:", e);
+        console.error("エラー詳細:", e.message);
         return { statusCode: 500, headers, body: e.message };
     }
 };
