@@ -7,7 +7,6 @@ exports.handler = async (event) => {
 
     try {
         const data = JSON.parse(event.body);
-        // ssUrl (証拠画像) を受け取れるように追加
         const { userId, userName, status, lastUpdate, item, amount, banOption, ssUrl } = data;
 
         const REPO_OWNER = "weiweiwei8878dayo";
@@ -29,6 +28,13 @@ exports.handler = async (event) => {
 
         const index = json.findIndex(entry => entry.userId === userId);
         
+        // --- 修正箇所: ssUrlの更新ロジック ---
+        // 送られてきたssUrlが undefined でなければ（"-"等でも）上書きする
+        // これにより、新しい注文時に "-" を送れば画像が消えるようになる
+        const currentSS = (ssUrl !== undefined && ssUrl !== null) 
+            ? ssUrl 
+            : (index !== -1 ? json[index].ssUrl : "-");
+
         const newEntry = {
             userId,
             userName,
@@ -37,8 +43,7 @@ exports.handler = async (event) => {
             item: item || (index !== -1 ? json[index].item : "-"),
             amount: amount || (index !== -1 ? json[index].amount : 0),
             banOption: banOption || (index !== -1 ? json[index].banOption : "-"),
-            // 画像URLがあれば更新、なければ既存のまま、それもなければ "-"
-            ssUrl: ssUrl || (index !== -1 ? json[index].ssUrl : "-")
+            ssUrl: currentSS
         };
 
         if (index !== -1) {
