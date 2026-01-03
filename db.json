@@ -1,9 +1,9 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": "tanakatakeshi__1",
-    "status": "支払い確認待ち",
-    "lastUpdate": "2026-01-03T16:06:56.994Z",
+    "userName": null,
+    "status": "作業中",
+    "lastUpdate": "2026-01-03T16:07:11.493Z",
     "item": "1億コイン, 2000万コイン",
     "amount": "450",
     "banOption": "no",
