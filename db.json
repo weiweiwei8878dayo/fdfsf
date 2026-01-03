@@ -1,9 +1,9 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": "tanakatakeshi__1",
-    "status": "支払い確認待ち",
-    "lastUpdate": "2026-01-03T15:47:47.652Z",
+    "userName": null,
+    "status": "作業中",
+    "lastUpdate": "2026-01-03T15:47:59.836Z",
     "item": "レジェステ解放",
     "amount": "750",
     "banOption": "no",
