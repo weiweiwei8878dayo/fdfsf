@@ -6,40 +6,34 @@
     <title>代行ステータス確認</title>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; text-align: center; }
-        
-        /* --- 共通スタイル --- */
         h1 { color: #444; margin-bottom: 20px; }
-        .hidden { display: none; } /* 表示切替用 */
+        .hidden { display: none; }
 
-        /* --- お客様用検索画面 --- */
+        /* お客様用画面 */
         #user-view {
             background: white; padding: 40px; border-radius: 10px; 
             max-width: 600px; margin: 50px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        input[type="text"] { 
-            padding: 15px; width: 60%; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; 
-        }
-        button.search-btn { 
-            padding: 15px 25px; background: #28a745; color: white; border: none; 
-            border-radius: 5px; font-size: 16px; cursor: pointer; margin-left: 10px;
-        }
+        input[type="text"] { padding: 15px; width: 60%; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+        button.search-btn { padding: 15px 25px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px; }
         
         /* 結果カード */
-        .result-card { 
-            background: #f9f9f9; padding: 20px; border-radius: 8px; 
-            border-left: 5px solid #28a745; margin-top: 20px; text-align: left;
-        }
+        .result-card { background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 5px solid #28a745; margin-top: 20px; text-align: left; }
         .label { font-weight: bold; color: #555; }
         .value { font-size: 1.1em; font-weight: bold; margin-left: 10px; }
+        
+        /* 画像リンクボタン */
+        .ss-link {
+            display: inline-block; margin-top: 5px; padding: 5px 10px; 
+            background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;
+        }
+        .ss-link:hover { background: #0056b3; }
 
-        /* --- 管理者用画面 --- */
+        /* 管理者画面 */
         #admin-view { max-width: 1200px; margin: 0 auto; }
         table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
         th { background: #007bff; color: white; }
-        tr:hover { background: #f1f1f1; }
-
-        /* ステータスバッジ */
         .badge-wait { color: #d9534f; font-weight: bold; }
         .badge-work { color: #f0ad4e; font-weight: bold; }
         .badge-done { color: #5cb85c; font-weight: bold; }
@@ -47,7 +41,7 @@
 </head>
 <body>
 
-    <!-- ▼ お客様用画面（通常アクセスで表示） ▼ -->
+    <!-- お客様用画面 -->
     <div id="user-view" class="hidden">
         <h1>📦 ご依頼状況の確認</h1>
         <p>DiscordのユーザーIDを入力してください</p>
@@ -56,7 +50,6 @@
             <button class="search-btn" onclick="searchUser()">検索</button>
         </div>
 
-        <!-- 検索結果エリア -->
         <div id="search-result" class="hidden">
             <div class="result-card">
                 <p><span class="label">ステータス:</span><span id="u-status" class="value">-</span></p>
@@ -64,12 +57,14 @@
                 <p><span class="label">注文内容:</span><span id="u-item" class="value">-</span></p>
                 <p><span class="label">金額:</span><span id="u-amount" class="value">-</span></p>
                 <p><span class="label">BAN保証:</span><span id="u-ban" class="value">-</span></p>
+                <!-- 証拠画像エリア -->
+                <p id="u-ss-area" class="hidden"><span class="label">完了証拠:</span> <a id="u-ss-link" class="ss-link" href="#" target="_blank">📷 画像を確認する</a></p>
             </div>
         </div>
         <p id="not-found" class="hidden" style="color:red; margin-top:20px;">⚠️ 該当するデータが見つかりません</p>
     </div>
 
-    <!-- ▼ 管理者用画面（?pw=xxx の時だけ表示） ▼ -->
+    <!-- 管理者用画面 -->
     <div id="admin-view" class="hidden">
         <h1>🔧 管理者ダッシュボード</h1>
         <p style="text-align:right;">自動更新中...</p>
@@ -81,7 +76,7 @@
                     <th>ステータス</th>
                     <th>内容</th>
                     <th>金額</th>
-                    <th>BAN保証</th>
+                    <th>証拠</th>
                     <th>ID</th>
                 </tr>
             </thead>
@@ -90,31 +85,23 @@
     </div>
 
     <script>
-        // 🔑 ここでURLパラメータのパスワードを設定
-        const SECRET_PASS = "yudai2011"; 
-
+        const SECRET_PASS = "yudai2011"; // 管理者パスワード
         let allData = [];
 
-        // ページ読み込み時にモード判定
         window.onload = async () => {
             const params = new URLSearchParams(window.location.search);
             const pw = params.get('pw');
-            const idParam = params.get('id'); // 一般用URLパラメータ
+            const idParam = params.get('id');
 
-            // データの取得
             try {
                 const res = await fetch('db.json?' + new Date().getTime());
                 if(res.ok) allData = await res.json();
             } catch(e) { console.error("Data error"); }
 
-            // 判定ロジック
             if (pw === SECRET_PASS) {
-                // 管理者モード
                 showAdminMode();
             } else {
-                // 一般ユーザーモード
                 document.getElementById('user-view').style.display = 'block';
-                // ?id=... があれば自動検索
                 if(idParam) {
                     document.getElementById('searchId').value = idParam;
                     searchUser();
@@ -122,24 +109,18 @@
             }
         };
 
-        // --- 管理者モードの処理 ---
         function showAdminMode() {
             document.getElementById('admin-view').style.display = 'block';
             renderAdminTable();
-            // 30秒ごとに更新
             setInterval(async () => {
                 const res = await fetch('db.json?' + new Date().getTime());
-                if(res.ok) {
-                    allData = await res.json();
-                    renderAdminTable();
-                }
+                if(res.ok) { allData = await res.json(); renderAdminTable(); }
             }, 30000);
         }
 
         function renderAdminTable() {
             const tbody = document.getElementById('admin-tbody');
             tbody.innerHTML = "";
-            // 日付順
             allData.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
 
             allData.forEach(d => {
@@ -148,24 +129,30 @@
                 else if(d.status.includes("作業")) stClass = "badge-work";
                 else if(d.status.includes("完了")) stClass = "badge-done";
 
+                // 証拠リンクの有無
+                const ssHtml = (d.ssUrl && d.ssUrl.startsWith("http")) 
+                    ? `<a href="${d.ssUrl}" target="_blank" class="ss-link">画像</a>` 
+                    : "-";
+
                 const row = `<tr>
                     <td>${new Date(d.lastUpdate).toLocaleString('ja-JP')}</td>
                     <td>${d.userName}</td>
                     <td class="${stClass}">${d.status}</td>
                     <td>${d.item || "-"}</td>
                     <td>${d.amount ? d.amount + "円" : "-"}</td>
-                    <td>${d.banOption === "yes" ? "あり" : "なし"}</td>
+                    <td>${ssHtml}</td>
                     <td style="font-size:11px; color:#888;">${d.userId}</td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
         }
 
-        // --- 一般ユーザーモードの処理 ---
         function searchUser() {
             const input = document.getElementById('searchId').value.trim();
             const resultBox = document.getElementById('search-result');
             const notFound = document.getElementById('not-found');
+            const ssArea = document.getElementById('u-ss-area');
+            const ssLink = document.getElementById('u-ss-link');
 
             const target = allData.find(d => d.userId === input);
 
@@ -173,7 +160,6 @@
                 notFound.style.display = 'none';
                 resultBox.style.display = 'block';
 
-                // DOM更新
                 const stElem = document.getElementById('u-status');
                 stElem.innerText = target.status;
                 stElem.className = "value";
@@ -185,6 +171,14 @@
                 document.getElementById('u-item').innerText = target.item || "-";
                 document.getElementById('u-amount').innerText = target.amount ? target.amount + "円" : "-";
                 document.getElementById('u-ban').innerText = target.banOption === "yes" ? "あり" : "なし";
+
+                // 証拠画像の表示制御
+                if (target.ssUrl && target.ssUrl.startsWith("http")) {
+                    ssArea.style.display = "block";
+                    ssLink.href = target.ssUrl;
+                } else {
+                    ssArea.style.display = "none";
+                }
             } else {
                 resultBox.style.display = 'none';
                 notFound.style.display = 'block';
