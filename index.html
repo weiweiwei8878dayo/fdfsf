@@ -3,125 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>代行進捗確認・管理パネル</title>
+    <title>代行依頼管理パネル</title>
     <style>
-        body { background: #0f172a; color: #eee; font-family: sans-serif; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
-        h1 { border-left: 5px solid #3b82f6; padding-left: 15px; font-size: 1.5rem; }
+        body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; }
+        h1 { text-align: center; color: #444; }
+        .container { max-width: 1200px; margin: 0 auto; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background: #007bff; color: #fff; white-space: nowrap; }
+        tr:hover { background: #f1f1f1; }
         
-        /* 進捗確認用スタイル */
-        .checker-box { text-align: center; }
-        input { background: #0f172a; border: 1px solid #334155; color: #fff; padding: 12px; border-radius: 6px; width: 80%; max-width: 300px; margin-bottom: 15px; outline: none; }
-        button { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #2563eb; }
-        
-        #result-display { margin-top: 25px; display: none; border-top: 1px solid #334155; padding-top: 20px; }
-        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9em; background: #334155; }
-        .active { background: #22c55e; color: white; }
+        /* ステータスの色分け */
+        .status-wait { color: #d9534f; font-weight: bold; } /* 支払い待ち - 赤 */
+        .status-work { color: #f0ad4e; font-weight: bold; } /* 作業中 - オレンジ */
+        .status-done { color: #5cb85c; font-weight: bold; } /* 完了 - 緑 */
 
-        /* 管理者テーブルスタイル */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
-        th { color: #94a3b8; font-size: 0.9em; }
-        .status-yes { color: #22c55e; font-weight: bold; }
-        .loading { text-align: center; color: #64748b; }
+        .ban-yes { background-color: #dff0d8; color: #3c763d; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+        .ban-no { background-color: #f2dede; color: #a94442; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
     </style>
 </head>
 <body>
+    <h1>📋 代行依頼 リアルタイム状況</h1>
     <div class="container">
-        <div id="user-view">
-            <h1>🔍 代行進捗を確認する</h1>
-            <div class="card checker-box">
-                <p style="color: #94a3b8;">依頼時に使用した「Discord ID」を入力してください。</p>
-                <input type="text" id="targetId" placeholder="例: 1262777743368781834">
-                <br>
-                <button onclick="checkStatus()">進捗を検索</button>
-
-                <div id="result-display">
-                    <p>現在の状態: <span id="statusText" class="status-badge active">読み込み中...</span></p>
-                    <p>依頼内容: <strong id="itemText">---</strong></p>
-                    <p style="font-size: 0.8em; color: #64748b;">最終更新: <span id="timeText">---</span></p>
-                </div>
-            </div>
-        </div>
-
-        <div id="admin-view" style="display: none;">
-            <h1>🐈 管理者用：依頼リスト</h1>
-            <div class="card">
-                <table id="list-table">
-                    <thead>
-                        <tr>
-                            <th>日付</th>
-                            <th>ユーザー</th>
-                            <th>金額</th>
-                            <th>BAN保証</th>
-                        </tr>
-                    </thead>
-                    <tbody id="list-body">
-                        <tr><td colspan="4" class="loading">読み込み中...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <table id="orderTable">
+            <thead>
+                <tr>
+                    <th>更新日時</th>
+                    <th>ユーザー名</th>
+                    <th>ステータス</th>
+                    <th>注文内容</th>
+                    <th>金額</th>
+                    <th>BAN保証</th>
+                    <th>ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- データがここに読み込まれます -->
+            </tbody>
+        </table>
     </div>
 
     <script>
-        const params = new URLSearchParams(window.location.search);
-        // パスワードとパラメータ名を指定通りに修正
-        const pass = params.get('pw');
-        const isAdmin = (pass === 'weiweiwei8878');
-
-        if (isAdmin) {
-            document.getElementById('user-view').style.display = 'none';
-            document.getElementById('admin-view').style.display = 'block';
-            loadAdminList();
-        }
-
-        // --- 消費者用：進捗検索機能 ---
-        async function checkStatus() {
-            const userId = document.getElementById('targetId').value.trim();
-            if(!userId) return alert("IDを入力してください");
-
+        async function loadData() {
             try {
-                const res = await fetch(`/.netlify/functions/save-id?id=${userId}`);
-                if (!res.ok) throw new Error();
-                
+                // キャッシュ回避のためにタイムスタンプ付与
+                const res = await fetch('db.json?' + new Date().getTime());
                 const data = await res.json();
-                document.getElementById('result-display').style.display = 'block';
-                document.getElementById('statusText').innerText = data.status || "確認中";
-                document.getElementById('itemText').innerText = data.item || "---";
-                document.getElementById('timeText').innerText = data.lastUpdate ? new Date(data.lastUpdate).toLocaleString() : "---";
-            } catch (e) {
-                alert("該当する依頼が見つかりませんでした。");
-            }
-        }
+                
+                // 日付が新しい順にソート
+                data.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
 
-        // --- 管理者用：リスト読み込み ---
-        async function loadAdminList() {
-            try {
-                // 通信先にも新しいパスワードを付与
-                const res = await fetch(`/.netlify/functions/get-ids?pw=weiweiwei8878`);
-                if (!res.ok) throw new Error();
-                
-                const data = await res.json();
-                const body = document.getElementById('list-body');
-                body.innerHTML = data.length ? '' : '<tr><td colspan="4">依頼はありません</td></tr>';
-                
-                data.reverse().forEach(item => {
-                    body.innerHTML += `<tr>
-                        <td>${new Date(item.date).toLocaleDateString()}</td>
-                        <td>${item.userName}</td>
-                        <td>${item.amount}円</td>
-                        <td class="${item.banOption === 'yes' ? 'status-yes' : ''}">
-                            ${item.banOption === 'yes' ? '🛡️ あり' : 'なし'}
-                        </td>
-                    </tr>`;
+                const tbody = document.querySelector("#orderTable tbody");
+                tbody.innerHTML = "";
+
+                data.forEach(entry => {
+                    const row = document.createElement("tr");
+
+                    // 日付フォーマット
+                    const date = new Date(entry.lastUpdate).toLocaleString('ja-JP');
+
+                    // ステータスに応じたクラス適用
+                    let statusClass = "";
+                    if (entry.status.includes("待ち")) statusClass = "status-wait";
+                    else if (entry.status.includes("作業")) statusClass = "status-work";
+                    else if (entry.status.includes("完了")) statusClass = "status-done";
+
+                    // BAN保証の表示
+                    const banBadge = entry.banOption === "yes" 
+                        ? '<span class="ban-yes">あり</span>' 
+                        : '<span class="ban-no">なし</span>';
+
+                    row.innerHTML = `
+                        <td>${date}</td>
+                        <td>${entry.userName}</td>
+                        <td class="${statusClass}">${entry.status}</td>
+                        <td>${entry.item || "-"}</td>
+                        <td>${entry.amount ? entry.amount + "円" : "-"}</td>
+                        <td>${entry.banOption !== "-" ? banBadge : "-"}</td>
+                        <td style="font-size:10px; color:#888;">${entry.userId}</td>
+                    `;
+                    tbody.appendChild(row);
                 });
-            } catch (e) {
-                document.getElementById('list-body').innerHTML = '<tr><td colspan="4">通信エラー。PWが間違っているか、サーバーの問題です。</td></tr>';
+            } catch (err) {
+                console.error("データ読み込みエラー:", err);
             }
         }
+        // 初回読み込みと自動更新
+        loadData();
+        setInterval(loadData, 30000); // 30秒ごとに更新
     </script>
 </body>
 </html>
