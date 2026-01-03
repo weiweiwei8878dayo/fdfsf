@@ -3,70 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>代行管理パネル</title>
+    <title>代行進捗確認・管理パネル</title>
     <style>
         body { background: #0f172a; color: #eee; font-family: sans-serif; padding: 20px; }
         .container { max-width: 900px; margin: auto; }
-        .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
+        h1 { border-left: 5px solid #3b82f6; padding-left: 15px; font-size: 1.5rem; }
+        
+        /* 進捗確認用スタイル */
+        .checker-box { text-align: center; }
+        input { background: #0f172a; border: 1px solid #334155; color: #fff; padding: 12px; border-radius: 6px; width: 80%; max-width: 300px; margin-bottom: 15px; outline: none; }
+        button { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background: #2563eb; }
+        
+        #result-display { margin-top: 25px; display: none; border-top: 1px solid #334155; padding-top: 20px; }
+        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9em; background: #334155; }
+        .active { background: #22c55e; color: white; }
+
+        /* 管理者テーブルスタイル */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
         th { color: #94a3b8; font-size: 0.9em; }
         .status-yes { color: #22c55e; font-weight: bold; }
-        .status-no { color: #94a3b8; }
         .loading { text-align: center; color: #64748b; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🐈 代行依頼リスト</h1>
-        <div class="card">
-            <table id="list-table">
-                <thead>
-                    <tr>
-                        <th>日付</th>
-                        <th>ユーザー</th>
-                        <th>金額</th>
-                        <th>BAN保証</th>
-                    </tr>
-                </thead>
-                <tbody id="list-body">
-                    <tr><td colspan="4" class="loading">読み込み中...</td></tr>
-                </tbody>
-            </table>
+        <div id="user-view">
+            <h1>🔍 代行進捗を確認する</h1>
+            <div class="card checker-box">
+                <p style="color: #94a3b8;">依頼時に使用した「Discord ID」を入力してください。</p>
+                <input type="text" id="targetId" placeholder="例: 1262777743368781834">
+                <br>
+                <button onclick="checkStatus()">進捗を検索</button>
+
+                <div id="result-display">
+                    <p>現在の状態: <span id="statusText" class="status-badge active">読み込み中...</span></p>
+                    <p>依頼内容: <strong id="itemText">---</strong></p>
+                    <p style="font-size: 0.8em; color: #64748b;">最終更新: <span id="timeText">---</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-view" style="display: none;">
+            <h1>🐈 管理者用：依頼リスト</h1>
+            <div class="card">
+                <table id="list-table">
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>ユーザー</th>
+                            <th>金額</th>
+                            <th>BAN保証</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
         const params = new URLSearchParams(window.location.search);
-        const pw = params.get('id');
+        const isAdmin = params.get('id') === 'yudai2011';
 
-        async function loadList() {
-            if (pw !== 'yudai2011') {
-                document.body.innerHTML = '<h1>アクセス拒否</h1>';
-                return;
-            }
+        // ページ読み込み時の切り替え
+        if (isAdmin) {
+            document.getElementById('user-view').style.display = 'none';
+            document.getElementById('admin-view').style.display = 'block';
+            loadAdminList();
+        }
+
+        // --- 消費者用：進捗検索機能 ---
+        async function checkStatus() {
+            const userId = document.getElementById('targetId').value.trim();
+            if(!userId) return alert("IDを入力してください");
+
             try {
-                const res = await fetch(`/.netlify/functions/get-ids?pw=${pw}`);
+                // 前回の save-id.js で保存したデータを取得
+                const res = await fetch(`/.netlify/functions/save-id?id=${userId}`);
+                if (!res.ok) throw new Error();
+                
+                const data = await res.json();
+                document.getElementById('result-display').style.display = 'block';
+                document.getElementById('statusText').innerText = data.status || "支払い確認待ち";
+                document.getElementById('itemText').innerText = data.item || "代行メニュー";
+                document.getElementById('timeText').innerText = data.lastUpdate ? new Date(data.lastUpdate).toLocaleString() : "---";
+            } catch (e) {
+                alert("該当する依頼が見つかりませんでした。");
+            }
+        }
+
+        // --- 管理者用：リスト読み込み ---
+        async function loadAdminList() {
+            try {
+                const res = await fetch(`/.netlify/functions/get-ids?pw=yudai2011`);
                 const data = await res.json();
                 const body = document.getElementById('list-body');
-                body.innerHTML = data.length ? '' : '<tr><td colspan="4">依頼はありません</td></tr>';
+                body.innerHTML = '';
                 
                 data.reverse().forEach(item => {
-                    const row = `<tr>
+                    body.innerHTML += `<tr>
                         <td>${new Date(item.date).toLocaleDateString()}</td>
                         <td>${item.userName}</td>
                         <td>${item.amount}円</td>
-                        <td class="${item.banOption === 'yes' ? 'status-yes' : 'status-no'}">
+                        <td class="${item.banOption === 'yes' ? 'status-yes' : ''}">
                             ${item.banOption === 'yes' ? '🛡️ あり' : 'なし'}
                         </td>
                     </tr>`;
-                    body.innerHTML += row;
                 });
             } catch (e) {
                 document.getElementById('list-body').innerHTML = '<tr><td colspan="4">通信エラー</td></tr>';
             }
         }
-        loadList();
     </script>
 </body>
 </html>
