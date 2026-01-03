@@ -1,11 +1,12 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": "tanakatakeshi__1",
-    "status": "支払い確認待ち",
-    "lastUpdate": "2026-01-03T06:52:28.885Z",
+    "userName": null,
+    "status": "完了",
+    "lastUpdate": "2026-01-03T06:53:07.846Z",
     "item": "猫缶カンスト",
     "amount": "150",
-    "banOption": "no"
+    "banOption": "no",
+    "ssUrl": "https://cdn.discordapp.com/attachments/1456597703214497844/1456599592631013427/Screenshot_20260102-190202.png?ex=69599c55&is=69584ad5&hm=c7a44d9f31407d0eb090b647847960394f577da34c69d98753f2038df84fcc59&"
   }
 ]
