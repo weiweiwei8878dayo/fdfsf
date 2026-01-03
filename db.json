@@ -1,9 +1,9 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": "tanakatakeshi__1",
-    "status": "支払い確認待ち",
-    "lastUpdate": "2026-01-03T07:09:55.358Z",
+    "userName": null,
+    "status": "保留中（コード間違い）",
+    "lastUpdate": "2026-01-03T07:10:13.240Z",
     "item": "猫缶カンスト, XPカンスト",
     "amount": "1100",
     "banOption": "yes",
