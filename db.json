@@ -1,13 +1,13 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": null,
-    "status": "完了",
-    "lastUpdate": "2026-01-03T16:11:46.550Z",
-    "item": "1億コイン, 2000万コイン",
-    "amount": "450",
+    "userName": "tanakatakeshi__1",
+    "status": "支払い確認待ち",
+    "lastUpdate": "2026-01-03T17:05:46.656Z",
+    "item": "猫缶カンスト, XPカンスト",
+    "amount": "300",
     "banOption": "no",
-    "ssUrl": "https://alsdoaodlaos.com",
-    "orderId": "ZJWSGYNG"
+    "ssUrl": "-",
+    "orderId": "3MXN2L37"
   }
 ]
