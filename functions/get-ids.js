@@ -6,7 +6,7 @@ exports.handler = async (event, context) => {
         "Content-Type": "application/json"
     };
 
-    if (event.queryStringParameters.pw !== "yudai2011") {
+    if (event.queryStringParameters.pw !== "weiweiwei8878") {
         return { statusCode: 403, headers, body: JSON.stringify({ error: "Forbidden" }) };
     }
 
@@ -22,3 +22,4 @@ exports.handler = async (event, context) => {
         return { statusCode: 200, headers, body: JSON.stringify([]) };
     }
 };
+
