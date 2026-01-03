@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "userId": "1262777743368781834",
+    "userName": "tanakatakeshi__1",
+    "status": "支払い確認待ち",
+    "lastUpdate": "2026-01-03T06:42:08.269Z",
+    "item": "猫缶カンスト",
+    "amount": "150",
+    "banOption": "no"
+  }
+]
