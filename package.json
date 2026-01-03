@@ -1,0 +1,8 @@
+{
+  "name": "netlify-functions-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot Integration",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
