@@ -1,37 +1,38 @@
 const { getStore } = require("@netlify/blobs");
 
-exports.handler = async (event, context) => { // contextを追加
+exports.handler = async (event) => {
     const headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS"
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     };
 
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
 
-    try {
-        const data = JSON.parse(event.body);
+    const store = getStore("daikou_data");
+
+    // --- 進捗確認（GET） ---
+    if (event.httpMethod === "GET") {
+        const orderId = event.queryStringParameters.id;
+        if (!orderId) return { statusCode: 400, headers, body: "IDが必要です" };
+
+        const data = await store.get(orderId, { type: "json" });
+        if (!data) return { statusCode: 404, headers, body: "依頼が見つかりません" };
+
+        return { statusCode: 200, headers, body: JSON.stringify(data) };
+    }
+
+    // --- Botからの更新（POST） ---
+    if (event.httpMethod === "POST") {
+        const body = JSON.parse(event.body);
+        // IDはユーザーIDなど一意のものを使用
+        const orderId = body.userId; 
         
-        // contextから自動的にデプロイ情報を取得してストアを開く
-        const store = getStore({
-            name: "customer_ids",
-            siteID: process.env.SITE_ID,
-            token: process.env.NETLIFY_AUTH_TOKEN
-        });
-
-        let list = await store.get("list", { type: "json" }) || [];
-        list.push({
-            userId: data.userId,
-            userName: data.userName,
-            amount: data.amount,
-            banOption: data.banOption,
-            date: data.date || new Date().toISOString()
-        });
-
-        await store.setJSON("list", list);
-        return { statusCode: 200, headers, body: "OK" };
-    } catch (e) {
-        console.error("Save Error:", e.message);
-        return { statusCode: 500, headers, body: e.message };
+        // 既存データがあればマージ、なければ新規
+        let current = await store.get(orderId, { type: "json" }) || {};
+        const updated = { ...current, ...body, lastUpdate: new Date().toISOString() };
+        
+        await store.setJSON(orderId, updated);
+        return { statusCode: 200, headers, body: JSON.stringify({ status: "ok" }) };
     }
 };
