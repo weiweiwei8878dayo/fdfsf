@@ -1,12 +1,12 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": null,
-    "status": "完了",
-    "lastUpdate": "2026-01-03T07:20:43.086Z",
-    "item": "レジェステ解放",
-    "amount": "750",
+    "userName": "tanakatakeshi__1",
+    "status": "支払い確認待ち",
+    "lastUpdate": "2026-01-03T07:35:02.933Z",
+    "item": "2000万コイン",
+    "amount": "150",
     "banOption": "no",
-    "ssUrl": "https://skibiditoilet.com/"
+    "ssUrl": "-"
   }
 ]
