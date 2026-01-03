@@ -1,122 +1,170 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>代行進捗確認・管理パネル</title>
-    <style>
-        body { background: #0f172a; color: #eee; font-family: sans-serif; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
-        h1 { border-left: 5px solid #3b82f6; padding-left: 15px; font-size: 1.5rem; }
-        
-        /* 進捗確認用スタイル */
-        .checker-box { text-align: center; }
-        input { background: #0f172a; border: 1px solid #334155; color: #fff; padding: 12px; border-radius: 6px; width: 80%; max-width: 300px; margin-bottom: 15px; outline: none; }
-        button { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #2563eb; }
-        
-        #result-display { margin-top: 25px; display: none; border-top: 1px solid #334155; padding-top: 20px; }
-        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9em; background: #334155; }
-        .active { background: #22c55e; color: white; }
+const { Client, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder, InteractionType, REST, Routes, SlashCommandBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, MessageFlags, Partials, PermissionFlagsBits, ChannelType } = require('discord.js');
+const fetch = require('node-fetch');
 
-        /* 管理者テーブルスタイル */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
-        th { color: #94a3b8; font-size: 0.9em; }
-        .status-yes { color: #22c55e; font-weight: bold; }
-        .loading { text-align: center; color: #64748b; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div id="user-view">
-            <h1>🔍 代行進捗を確認する</h1>
-            <div class="card checker-box">
-                <p style="color: #94a3b8;">依頼時に使用した「Discord ID」を入力してください。</p>
-                <input type="text" id="targetId" placeholder="例: 1262777743368781834">
-                <br>
-                <button onclick="checkStatus()">進捗を検索</button>
+// --- 設定情報 ---
+const APP_ID = "1456569335190388951";
+const TOKEN = "MTQ1NjU2OTMzNTE5MDM4ODk1MQ.Gy9DbE.8evT660iyPHVWKpYy2SWpzlzmcl0QDd3xnFI8c";
+const ADMIN_ID = "1262777743368781834";
+const JISSEKI_CHANNEL_ID = "1411011385512558752";
+const NETLIFY_URL = "https://gxxf.netlify.app"; 
 
-                <div id="result-display">
-                    <p>現在の状態: <span id="statusText" class="status-badge active">読み込み中...</span></p>
-                    <p>依頼内容: <strong id="itemText">---</strong></p>
-                    <p style="font-size: 0.8em; color: #64748b;">最終更新: <span id="timeText">---</span></p>
-                </div>
-            </div>
-        </div>
+const client = new Client({ 
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.DirectMessages, GatewayIntentBits.MessageContent], 
+    partials: [Partials.Channel, Partials.Message] 
+});
 
-        <div id="admin-view" style="display: none;">
-            <h1>🐈 管理者用：依頼リスト</h1>
-            <div class="card">
-                <table id="list-table">
-                    <thead>
-                        <tr>
-                            <th>日付</th>
-                            <th>ユーザー</th>
-                            <th>金額</th>
-                            <th>BAN保証</th>
-                        </tr>
-                    </thead>
-                    <tbody id="list-body"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+// --- Netlify進捗更新用関数 ---
+async function updateNetlifyStatus(userId, status, item = null) {
+    const data = { userId, status, lastUpdate: new Date().toISOString() };
+    if (item) data.item = item;
 
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const isAdmin = params.get('id') === 'yudai2011';
+    try {
+        await fetch(`${NETLIFY_URL}/.netlify/functions/save-id`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        console.log(`[Netlify] ${userId} のステータスを "${status}" に更新しました。`);
+    } catch (err) {
+        console.error("[Netlify] 送信エラー:", err);
+    }
+}
 
-        // ページ読み込み時の切り替え
-        if (isAdmin) {
-            document.getElementById('user-view').style.display = 'none';
-            document.getElementById('admin-view').style.display = 'block';
-            loadAdminList();
+client.once('ready', async () => {
+    console.log(`🚀 Bot起動: ${client.user.tag}`);
+    const rest = new REST({ version: '10' }).setToken(TOKEN);
+    const commands = [
+        new SlashCommandBuilder().setName('daikou-panel').setDescription('にゃんこ代行パネルを設置'),
+        new SlashCommandBuilder().setName('tsumu-panel').setDescription('ツムツム代行パネルを設置'),
+        new SlashCommandBuilder().setName('ticket-panel').setDescription('チケットパネルを設置')
+    ];
+    await rest.put(Routes.applicationCommands(APP_ID), { body: commands });
+});
+
+client.on('interactionCreate', async (interaction) => {
+    const isAdmin = interaction.user.id === ADMIN_ID;
+
+    // 1. パネル設置
+    if (interaction.isChatInputCommand()) {
+        if (interaction.commandName === 'daikou-panel') {
+            const select = new StringSelectMenuBuilder().setCustomId('menu_select_nyanko').setPlaceholder('メニュー選択').addOptions([
+                { label: '全キャラ解放', description: '1000円', value: '全キャラ解放:1000' },
+                { label: '猫缶・XP・ドリンク', description: '500円', value: '猫缶等:500' }
+            ]);
+            await interaction.reply({ content: "🐈 にゃんこ代行メニュー", components: [new ActionRowBuilder().addComponents(select)] });
+        }
+        if (interaction.commandName === 'tsumu-panel') {
+            const select = new StringSelectMenuBuilder().setCustomId('menu_select_tsumu').setPlaceholder('メニュー選択').addOptions([
+                { label: '1億コイン', description: '300円', value: '1億コイン:300' },
+                { label: '2000万コイン', description: '150円', value: '2000万コイン:150' },
+                { label: 'レベルMAX', description: '400円', value: 'プレイヤーレベルMAX:400' }
+            ]);
+            await interaction.reply({ content: "🎡 ツムツム代行メニュー", components: [new ActionRowBuilder().addComponents(select)] });
+        }
+        if (interaction.commandName === 'ticket-panel') {
+            const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('create_ticket').setLabel('チケット作成').setStyle(ButtonStyle.Primary));
+            await interaction.reply({ content: "🎫 お問い合わせはこちら", components: [row] });
+        }
+    }
+
+    // 2. セレクトメニュー (保証選択へ)
+    if (interaction.isStringSelectMenu()) {
+        if (interaction.customId === 'menu_select_nyanko' || interaction.customId === 'menu_select_tsumu') {
+            const [label, price] = interaction.values[0].split(':');
+            const p = parseInt(price);
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`conf_no_${p}_${label}`).setLabel('保証なし').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId(`conf_yes_${p + 800}_${label}`).setLabel('🛡️ BAN保証あり(+800円)').setStyle(ButtonStyle.Success)
+            );
+            await interaction.reply({ content: `選択: ${label} (${p}円)\n保証を選んでください。`, components: [row], flags: [MessageFlags.Ephemeral] });
         }
 
-        // --- 消費者用：進捗検索機能 ---
-        async function checkStatus() {
-            const userId = document.getElementById('targetId').value.trim();
-            if(!userId) return alert("IDを入力してください");
+        // 管理者：時間選択 -> Netlifyステータス「作業中」へ
+        if (interaction.customId.startsWith('select_time_')) {
+            if (!isAdmin) return;
+            const targetId = interaction.customId.split('_')[2];
+            const time = interaction.values[0];
+            
+            await updateNetlifyStatus(targetId, `作業中 (目安:${time})`);
 
-            try {
-                // 前回の save-id.js で保存したデータを取得
-                const res = await fetch(`/.netlify/functions/save-id?id=${userId}`);
-                if (!res.ok) throw new Error();
-                
-                const data = await res.json();
-                document.getElementById('result-display').style.display = 'block';
-                document.getElementById('statusText').innerText = data.status || "支払い確認待ち";
-                document.getElementById('itemText').innerText = data.item || "代行メニュー";
-                document.getElementById('timeText').innerText = data.lastUpdate ? new Date(data.lastUpdate).toLocaleString() : "---";
-            } catch (e) {
-                alert("該当する依頼が見つかりませんでした。");
-            }
+            const user = await client.users.fetch(targetId).catch(() => null);
+            if (user) await user.send(`✅ お支払いを確認しました。作業を開始します（目安:${time}）。`).catch(()=>{});
+            await interaction.update({ content: `✅ 進行状況を「作業中」に更新しました。`, components: [] });
+        }
+    }
+
+    // 3. ボタン & モーダル
+    if (interaction.isButton()) {
+        const parts = interaction.customId.split('_');
+
+        if (parts[0] === 'conf') {
+            const [, isBan, total, label] = parts;
+            const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ag_req_${total}_${isBan}_${label}`).setLabel('同意してフォームへ').setStyle(ButtonStyle.Primary));
+            await interaction.reply({ content: `合計: ${total}円 / 内容: ${label}\n規約に同意しますか？`, components: [row], flags: [MessageFlags.Ephemeral] });
         }
 
-        // --- 管理者用：リスト読み込み ---
-        async function loadAdminList() {
-            try {
-                const res = await fetch(`/.netlify/functions/get-ids?pw=yudai2011`);
-                const data = await res.json();
-                const body = document.getElementById('list-body');
-                body.innerHTML = '';
-                
-                data.reverse().forEach(item => {
-                    body.innerHTML += `<tr>
-                        <td>${new Date(item.date).toLocaleDateString()}</td>
-                        <td>${item.userName}</td>
-                        <td>${item.amount}円</td>
-                        <td class="${item.banOption === 'yes' ? 'status-yes' : ''}">
-                            ${item.banOption === 'yes' ? '🛡️ あり' : 'なし'}
-                        </td>
-                    </tr>`;
-                });
-            } catch (e) {
-                document.getElementById('list-body').innerHTML = '<tr><td colspan="4">通信エラー</td></tr>';
-            }
+        if (parts[0] === 'ag') {
+            const [, , total, isBan, label] = parts;
+            const modal = new ModalBuilder().setCustomId(`modal_submit_${total}_${isBan}_${label}`).setTitle('依頼フォーム');
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('pp').setLabel(`PayPayリンク (${total}円)`).setStyle(1).setRequired(true)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('code').setLabel('コード/アカウント').setStyle(1).setRequired(true)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('auth').setLabel('認証/パスワード').setStyle(1).setRequired(true))
+            );
+            await interaction.showModal(modal);
         }
-    </script>
-</body>
-</html>
+
+        // 管理者ボタン
+        if (parts[0] === 'payok' && isAdmin) {
+            const select = new StringSelectMenuBuilder().setCustomId(`select_time_${parts[1]}`).setPlaceholder('目安時間')
+                .addOptions([{ label: '15分', value: '15分' }, { label: '30分', value: '30分' }, { label: '1時間', value: '1時間' }]);
+            await interaction.reply({ content: "作業時間を選択:", components: [new ActionRowBuilder().addComponents(select)], flags: [MessageFlags.Ephemeral] });
+        }
+
+        if (parts[0] === 'finish' && isAdmin) {
+            const modal = new ModalBuilder().setCustomId(`modal_finalreport_${parts[1]}`).setTitle('完了報告');
+            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ss').setLabel('証拠URL').setStyle(1).setRequired(true)));
+            await interaction.showModal(modal);
+        }
+
+        if (interaction.customId === 'create_ticket') {
+            const channel = await interaction.guild.channels.create({
+                name: `ticket-${interaction.user.username}`,
+                type: ChannelType.GuildText,
+                permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] }, { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }, { id: ADMIN_ID, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }]
+            });
+            await interaction.reply({ content: `チケット作成: ${channel}`, flags: [MessageFlags.Ephemeral] });
+        }
+    }
+
+    if (interaction.type === InteractionType.ModalSubmit) {
+        // 依頼送信 -> Netlifyステータス「支払い確認待ち」へ
+        if (interaction.customId.startsWith('modal_submit_')) {
+            const [, , total, isBan, label] = interaction.customId.split('_');
+            
+            await updateNetlifyStatus(interaction.user.id, "支払い確認待ち", label);
+
+            const admin = await client.users.fetch(ADMIN_ID);
+            const embed = new EmbedBuilder().setTitle("🔔 新着依頼").setColor(0x5865F2).addFields(
+                { name: "ユーザー", value: `${interaction.user.tag} (${interaction.user.id})` },
+                { name: "内容", value: `${label} / ${total}円` },
+                { name: "PayPay/情報", value: `リンク: ${interaction.fields.getTextInputValue('pp')}\n垢情報: ${interaction.fields.getTextInputValue('code')} / ${interaction.fields.getTextInputValue('auth')}` }
+            );
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`payok_${interaction.user.id}`).setLabel('💰 確認').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId(`finish_${interaction.user.id}`).setLabel('🏁 完了').setStyle(ButtonStyle.Primary)
+            );
+            await admin.send({ embeds: [embed], components: [row] });
+            await interaction.reply({ content: `✅ 送信完了！\n進捗確認URL: ${NETLIFY_URL}\nあなたのID: \`${interaction.user.id}\``, flags: [MessageFlags.Ephemeral] });
+        }
+
+        // 完了報告 -> Netlifyステータス「完了」へ
+        if (interaction.customId.startsWith('modal_finalreport_')) {
+            const targetId = interaction.customId.split('_')[2];
+            await updateNetlifyStatus(targetId, "完了");
+            await interaction.reply({ content: "完了通知を送信し、Netlifyを更新しました。", flags: [MessageFlags.Ephemeral] });
+        }
+    }
+});
+
+client.login(TOKEN);
