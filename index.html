@@ -3,94 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>代行依頼管理パネル</title>
+    <title>代行ステータス確認</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; }
-        h1 { text-align: center; color: #444; }
-        .container { max-width: 1200px; margin: 0 auto; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
-        th { background: #007bff; color: #fff; white-space: nowrap; }
-        tr:hover { background: #f1f1f1; }
+        body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; text-align: center; }
         
-        /* ステータスの色分け */
-        .status-wait { color: #d9534f; font-weight: bold; } /* 支払い待ち - 赤 */
-        .status-work { color: #f0ad4e; font-weight: bold; } /* 作業中 - オレンジ */
-        .status-done { color: #5cb85c; font-weight: bold; } /* 完了 - 緑 */
+        /* --- 共通スタイル --- */
+        h1 { color: #444; margin-bottom: 20px; }
+        .hidden { display: none; } /* 表示切替用 */
 
-        .ban-yes { background-color: #dff0d8; color: #3c763d; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
-        .ban-no { background-color: #f2dede; color: #a94442; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+        /* --- お客様用検索画面 --- */
+        #user-view {
+            background: white; padding: 40px; border-radius: 10px; 
+            max-width: 600px; margin: 50px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        input[type="text"] { 
+            padding: 15px; width: 60%; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; 
+        }
+        button.search-btn { 
+            padding: 15px 25px; background: #28a745; color: white; border: none; 
+            border-radius: 5px; font-size: 16px; cursor: pointer; margin-left: 10px;
+        }
+        
+        /* 結果カード */
+        .result-card { 
+            background: #f9f9f9; padding: 20px; border-radius: 8px; 
+            border-left: 5px solid #28a745; margin-top: 20px; text-align: left;
+        }
+        .label { font-weight: bold; color: #555; }
+        .value { font-size: 1.1em; font-weight: bold; margin-left: 10px; }
+
+        /* --- 管理者用画面 --- */
+        #admin-view { max-width: 1200px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background: #007bff; color: white; }
+        tr:hover { background: #f1f1f1; }
+
+        /* ステータスバッジ */
+        .badge-wait { color: #d9534f; font-weight: bold; }
+        .badge-work { color: #f0ad4e; font-weight: bold; }
+        .badge-done { color: #5cb85c; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>📋 代行依頼 リアルタイム状況</h1>
-    <div class="container">
-        <table id="orderTable">
+
+    <!-- ▼ お客様用画面（通常アクセスで表示） ▼ -->
+    <div id="user-view" class="hidden">
+        <h1>📦 ご依頼状況の確認</h1>
+        <p>DiscordのユーザーIDを入力してください</p>
+        <div>
+            <input type="text" id="searchId" placeholder="例: 123456789012345678">
+            <button class="search-btn" onclick="searchUser()">検索</button>
+        </div>
+
+        <!-- 検索結果エリア -->
+        <div id="search-result" class="hidden">
+            <div class="result-card">
+                <p><span class="label">ステータス:</span><span id="u-status" class="value">-</span></p>
+                <p><span class="label">更新日時:</span><span id="u-date" class="value">-</span></p>
+                <p><span class="label">注文内容:</span><span id="u-item" class="value">-</span></p>
+                <p><span class="label">金額:</span><span id="u-amount" class="value">-</span></p>
+                <p><span class="label">BAN保証:</span><span id="u-ban" class="value">-</span></p>
+            </div>
+        </div>
+        <p id="not-found" class="hidden" style="color:red; margin-top:20px;">⚠️ 該当するデータが見つかりません</p>
+    </div>
+
+    <!-- ▼ 管理者用画面（?pw=xxx の時だけ表示） ▼ -->
+    <div id="admin-view" class="hidden">
+        <h1>🔧 管理者ダッシュボード</h1>
+        <p style="text-align:right;">自動更新中...</p>
+        <table>
             <thead>
                 <tr>
-                    <th>更新日時</th>
+                    <th>日時</th>
                     <th>ユーザー名</th>
                     <th>ステータス</th>
-                    <th>注文内容</th>
+                    <th>内容</th>
                     <th>金額</th>
                     <th>BAN保証</th>
                     <th>ID</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- データがここに読み込まれます -->
-            </tbody>
+            <tbody id="admin-tbody"></tbody>
         </table>
     </div>
 
     <script>
-        async function loadData() {
+        // 🔑 ここでURLパラメータのパスワードを設定
+        const SECRET_PASS = "yudai2011"; 
+
+        let allData = [];
+
+        // ページ読み込み時にモード判定
+        window.onload = async () => {
+            const params = new URLSearchParams(window.location.search);
+            const pw = params.get('pw');
+            const idParam = params.get('id'); // 一般用URLパラメータ
+
+            // データの取得
             try {
-                // キャッシュ回避のためにタイムスタンプ付与
                 const res = await fetch('db.json?' + new Date().getTime());
-                const data = await res.json();
-                
-                // 日付が新しい順にソート
-                data.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
+                if(res.ok) allData = await res.json();
+            } catch(e) { console.error("Data error"); }
 
-                const tbody = document.querySelector("#orderTable tbody");
-                tbody.innerHTML = "";
+            // 判定ロジック
+            if (pw === SECRET_PASS) {
+                // 管理者モード
+                showAdminMode();
+            } else {
+                // 一般ユーザーモード
+                document.getElementById('user-view').style.display = 'block';
+                // ?id=... があれば自動検索
+                if(idParam) {
+                    document.getElementById('searchId').value = idParam;
+                    searchUser();
+                }
+            }
+        };
 
-                data.forEach(entry => {
-                    const row = document.createElement("tr");
+        // --- 管理者モードの処理 ---
+        function showAdminMode() {
+            document.getElementById('admin-view').style.display = 'block';
+            renderAdminTable();
+            // 30秒ごとに更新
+            setInterval(async () => {
+                const res = await fetch('db.json?' + new Date().getTime());
+                if(res.ok) {
+                    allData = await res.json();
+                    renderAdminTable();
+                }
+            }, 30000);
+        }
 
-                    // 日付フォーマット
-                    const date = new Date(entry.lastUpdate).toLocaleString('ja-JP');
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-tbody');
+            tbody.innerHTML = "";
+            // 日付順
+            allData.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
 
-                    // ステータスに応じたクラス適用
-                    let statusClass = "";
-                    if (entry.status.includes("待ち")) statusClass = "status-wait";
-                    else if (entry.status.includes("作業")) statusClass = "status-work";
-                    else if (entry.status.includes("完了")) statusClass = "status-done";
+            allData.forEach(d => {
+                let stClass = "";
+                if(d.status.includes("待ち")) stClass = "badge-wait";
+                else if(d.status.includes("作業")) stClass = "badge-work";
+                else if(d.status.includes("完了")) stClass = "badge-done";
 
-                    // BAN保証の表示
-                    const banBadge = entry.banOption === "yes" 
-                        ? '<span class="ban-yes">あり</span>' 
-                        : '<span class="ban-no">なし</span>';
+                const row = `<tr>
+                    <td>${new Date(d.lastUpdate).toLocaleString('ja-JP')}</td>
+                    <td>${d.userName}</td>
+                    <td class="${stClass}">${d.status}</td>
+                    <td>${d.item || "-"}</td>
+                    <td>${d.amount ? d.amount + "円" : "-"}</td>
+                    <td>${d.banOption === "yes" ? "あり" : "なし"}</td>
+                    <td style="font-size:11px; color:#888;">${d.userId}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
 
-                    row.innerHTML = `
-                        <td>${date}</td>
-                        <td>${entry.userName}</td>
-                        <td class="${statusClass}">${entry.status}</td>
-                        <td>${entry.item || "-"}</td>
-                        <td>${entry.amount ? entry.amount + "円" : "-"}</td>
-                        <td>${entry.banOption !== "-" ? banBadge : "-"}</td>
-                        <td style="font-size:10px; color:#888;">${entry.userId}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } catch (err) {
-                console.error("データ読み込みエラー:", err);
+        // --- 一般ユーザーモードの処理 ---
+        function searchUser() {
+            const input = document.getElementById('searchId').value.trim();
+            const resultBox = document.getElementById('search-result');
+            const notFound = document.getElementById('not-found');
+
+            const target = allData.find(d => d.userId === input);
+
+            if (target) {
+                notFound.style.display = 'none';
+                resultBox.style.display = 'block';
+
+                // DOM更新
+                const stElem = document.getElementById('u-status');
+                stElem.innerText = target.status;
+                stElem.className = "value";
+                if(target.status.includes("待ち")) stElem.classList.add("badge-wait");
+                else if(target.status.includes("作業")) stElem.classList.add("badge-work");
+                else if(target.status.includes("完了")) stElem.classList.add("badge-done");
+
+                document.getElementById('u-date').innerText = new Date(target.lastUpdate).toLocaleString('ja-JP');
+                document.getElementById('u-item').innerText = target.item || "-";
+                document.getElementById('u-amount').innerText = target.amount ? target.amount + "円" : "-";
+                document.getElementById('u-ban').innerText = target.banOption === "yes" ? "あり" : "なし";
+            } else {
+                resultBox.style.display = 'none';
+                notFound.style.display = 'block';
             }
         }
-        // 初回読み込みと自動更新
-        loadData();
-        setInterval(loadData, 30000); // 30秒ごとに更新
     </script>
 </body>
 </html>
