@@ -1,12 +1,12 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": null,
-    "status": "保留中（支払いエラー）",
-    "lastUpdate": "2026-01-03T07:39:17.791Z",
-    "item": "1億コイン",
-    "amount": "1100",
-    "banOption": "yes",
+    "userName": "tanakatakeshi__1",
+    "status": "支払い確認待ち",
+    "lastUpdate": "2026-01-03T15:28:03.528Z",
+    "item": "レジェステ解放, 猫缶カンスト",
+    "amount": "900",
+    "banOption": "no",
     "ssUrl": "-"
   }
 ]
