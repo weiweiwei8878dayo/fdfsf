@@ -7,7 +7,8 @@ exports.handler = async (event) => {
 
     try {
         const data = JSON.parse(event.body);
-        const { userId, userName, status, lastUpdate, item, amount, banOption, ssUrl } = data;
+        // orderId を追加
+        const { userId, userName, status, lastUpdate, item, amount, banOption, ssUrl, orderId } = data;
 
         const REPO_OWNER = "weiweiwei8878dayo";
         const REPO_NAME = "fdfsf";
@@ -28,12 +29,12 @@ exports.handler = async (event) => {
 
         const index = json.findIndex(entry => entry.userId === userId);
         
-        // --- 修正箇所: ssUrlの更新ロジック ---
-        // 送られてきたssUrlが undefined でなければ（"-"等でも）上書きする
-        // これにより、新しい注文時に "-" を送れば画像が消えるようになる
         const currentSS = (ssUrl !== undefined && ssUrl !== null) 
             ? ssUrl 
             : (index !== -1 ? json[index].ssUrl : "-");
+
+        // 既存の注文IDがあれば維持、新規なら保存
+        const currentOrderId = orderId || (index !== -1 ? json[index].orderId : null);
 
         const newEntry = {
             userId,
@@ -43,7 +44,8 @@ exports.handler = async (event) => {
             item: item || (index !== -1 ? json[index].item : "-"),
             amount: amount || (index !== -1 ? json[index].amount : 0),
             banOption: banOption || (index !== -1 ? json[index].banOption : "-"),
-            ssUrl: currentSS
+            ssUrl: currentSS,
+            orderId: currentOrderId
         };
 
         if (index !== -1) {
