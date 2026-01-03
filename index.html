@@ -8,29 +8,21 @@
         body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; text-align: center; }
         h1 { color: #444; margin-bottom: 20px; }
         .hidden { display: none; }
+        .error { color: red; font-weight: bold; }
 
-        /* お客様用画面 */
-        #user-view {
-            background: white; padding: 40px; border-radius: 10px; 
-            max-width: 600px; margin: 50px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
+        /* お客様用 */
+        #user-view { background: white; padding: 40px; border-radius: 10px; max-width: 600px; margin: 50px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         input[type="text"] { padding: 15px; width: 60%; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
-        button.search-btn { padding: 15px 25px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px; }
+        button { padding: 15px 25px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
         
-        /* 結果カード */
+        /* 結果表示 */
         .result-card { background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 5px solid #28a745; margin-top: 20px; text-align: left; }
         .label { font-weight: bold; color: #555; }
         .value { font-size: 1.1em; font-weight: bold; margin-left: 10px; }
-        
-        /* 画像リンクボタン */
-        .ss-link {
-            display: inline-block; margin-top: 5px; padding: 5px 10px; 
-            background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em;
-        }
-        .ss-link:hover { background: #0056b3; }
+        .ss-link { display: inline-block; margin-top: 5px; padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 0.9em; }
 
-        /* 管理者画面 */
-        #admin-view { max-width: 1200px; margin: 0 auto; }
+        /* 管理者用 */
+        #admin-view { max-width: 1200px; margin: 0 auto; display: none; }
         table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
         th { background: #007bff; color: white; }
@@ -42,42 +34,24 @@
 <body>
 
     <!-- お客様用画面 -->
-    <div id="user-view" class="hidden">
+    <div id="user-view">
         <h1>📦 ご依頼状況の確認</h1>
-        <p>DiscordのユーザーIDを入力してください</p>
         <div>
-            <input type="text" id="searchId" placeholder="例: 123456789012345678">
-            <button class="search-btn" onclick="searchUser()">検索</button>
+            <input type="text" id="searchId" placeholder="ユーザーIDを入力">
+            <button onclick="fetchData('user')">検索</button>
         </div>
-
-        <div id="search-result" class="hidden">
-            <div class="result-card">
-                <p><span class="label">ステータス:</span><span id="u-status" class="value">-</span></p>
-                <p><span class="label">更新日時:</span><span id="u-date" class="value">-</span></p>
-                <p><span class="label">注文内容:</span><span id="u-item" class="value">-</span></p>
-                <p><span class="label">金額:</span><span id="u-amount" class="value">-</span></p>
-                <p><span class="label">BAN保証:</span><span id="u-ban" class="value">-</span></p>
-                <!-- 証拠画像エリア -->
-                <p id="u-ss-area" class="hidden"><span class="label">完了証拠:</span> <a id="u-ss-link" class="ss-link" href="#" target="_blank">📷 画像を確認する</a></p>
-            </div>
-        </div>
-        <p id="not-found" class="hidden" style="color:red; margin-top:20px;">⚠️ 該当するデータが見つかりません</p>
+        <div id="result-area" class="hidden"></div>
+        <p id="msg" class="hidden"></p>
     </div>
 
     <!-- 管理者用画面 -->
-    <div id="admin-view" class="hidden">
+    <div id="admin-view">
         <h1>🔧 管理者ダッシュボード</h1>
-        <p style="text-align:right;">自動更新中...</p>
+        <p style="text-align:right;">ステータス: <span id="admin-status">接続中</span></p>
         <table>
             <thead>
                 <tr>
-                    <th>日時</th>
-                    <th>ユーザー名</th>
-                    <th>ステータス</th>
-                    <th>内容</th>
-                    <th>金額</th>
-                    <th>証拠</th>
-                    <th>ID</th>
+                    <th>日時</th><th>名前</th><th>ステータス</th><th>内容</th><th>金額</th><th>証拠</th><th>ID</th>
                 </tr>
             </thead>
             <tbody id="admin-tbody"></tbody>
@@ -85,104 +59,132 @@
     </div>
 
     <script>
-        const SECRET_PASS = "yudai2011"; // 管理者パスワード
-        let allData = [];
-
-        window.onload = async () => {
+        // ページ読み込み時の処理
+        window.onload = () => {
             const params = new URLSearchParams(window.location.search);
-            const pw = params.get('pw');
-            const idParam = params.get('id');
+            const pw = params.get('pw'); // URLの ?pw=...
+            const id = params.get('id'); // URLの ?id=...
 
-            try {
-                const res = await fetch('db.json?' + new Date().getTime());
-                if(res.ok) allData = await res.json();
-            } catch(e) { console.error("Data error"); }
-
-            if (pw === SECRET_PASS) {
-                showAdminMode();
-            } else {
-                document.getElementById('user-view').style.display = 'block';
-                if(idParam) {
-                    document.getElementById('searchId').value = idParam;
-                    searchUser();
-                }
+            if (pw) {
+                // パスワードがあるなら管理者モードでデータ取得を試みる
+                fetchData('admin', pw);
+            } else if (id) {
+                // IDがあるなら自動検索
+                document.getElementById('searchId').value = id;
+                fetchData('user', null, id);
             }
         };
 
-        function showAdminMode() {
-            document.getElementById('admin-view').style.display = 'block';
-            renderAdminTable();
-            setInterval(async () => {
-                const res = await fetch('db.json?' + new Date().getTime());
-                if(res.ok) { allData = await res.json(); renderAdminTable(); }
-            }, 30000);
+        async function fetchData(mode, password = null, userId = null) {
+            const idInput = userId || document.getElementById('searchId').value.trim();
+            const msg = document.getElementById('msg');
+            const resultArea = document.getElementById('result-area');
+
+            // APIへの問い合わせURLを作成
+            let apiUrl = '/.netlify/functions/get-data';
+            if (mode === 'admin') apiUrl += `?pw=${password}`;
+            else apiUrl += `?id=${idInput}`;
+
+            try {
+                const res = await fetch(apiUrl);
+                
+                // 認証エラーまたはデータなし
+                if (!res.ok) {
+                    if (mode === 'admin') {
+                        alert("パスワードが違います（またはサーバーエラー）");
+                        // 一般画面に戻す
+                        document.getElementById('user-view').style.display = 'block';
+                        document.getElementById('admin-view').style.display = 'none';
+                    } else {
+                        msg.innerText = "⚠️ データが見つかりません";
+                        msg.className = "error";
+                        msg.style.display = "block";
+                        resultArea.style.display = "none";
+                    }
+                    return;
+                }
+
+                const data = await res.json();
+
+                if (mode === 'admin') {
+                    // 管理者モード成功
+                    document.getElementById('user-view').style.display = 'none';
+                    document.getElementById('admin-view').style.display = 'block';
+                    renderAdminTable(data);
+                    
+                    // 30秒ごとに自動更新（パスワード付きで再取得）
+                    setInterval(async () => {
+                        const r = await fetch(apiUrl);
+                        if (r.ok) renderAdminTable(await r.json());
+                    }, 30000);
+
+                } else {
+                    // ユーザー検索成功
+                    if (data.length > 0) {
+                        renderUserResult(data[0]);
+                        msg.style.display = "none";
+                    } else {
+                        msg.innerText = "⚠️ データが見つかりません";
+                        msg.style.display = "block";
+                        resultArea.style.display = "none";
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                msg.innerText = "通信エラーが発生しました";
+                msg.style.display = "block";
+            }
         }
 
-        function renderAdminTable() {
+        // --- 表示用の関数 ---
+
+        function renderUserResult(d) {
+            const area = document.getElementById('result-area');
+            const ssHtml = (d.ssUrl && d.ssUrl.startsWith("http")) 
+                ? `<p><span class="label">証拠:</span> <a href="${d.ssUrl}" target="_blank" class="ss-link">📷 画像を見る</a></p>` : "";
+            
+            let stClass = "";
+            if(d.status.includes("待ち")) stClass = "badge-wait";
+            else if(d.status.includes("作業")) stClass = "badge-work";
+            else if(d.status.includes("完了")) stClass = "badge-done";
+
+            area.innerHTML = `
+                <div class="result-card">
+                    <p><span class="label">ステータス:</span> <span class="value ${stClass}">${d.status}</span></p>
+                    <p><span class="label">更新日時:</span> <span class="value">${new Date(d.lastUpdate).toLocaleString('ja-JP')}</span></p>
+                    <p><span class="label">内容:</span> <span class="value">${d.item || "-"}</span></p>
+                    <p><span class="label">金額:</span> <span class="value">${d.amount ? d.amount+"円" : "-"}</span></p>
+                    <p><span class="label">BAN保証:</span> <span class="value">${d.banOption === "yes" ? "あり" : "なし"}</span></p>
+                    ${ssHtml}
+                </div>
+            `;
+            area.style.display = "block";
+        }
+
+        function renderAdminTable(data) {
             const tbody = document.getElementById('admin-tbody');
             tbody.innerHTML = "";
-            allData.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
+            data.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
 
-            allData.forEach(d => {
+            data.forEach(d => {
                 let stClass = "";
                 if(d.status.includes("待ち")) stClass = "badge-wait";
                 else if(d.status.includes("作業")) stClass = "badge-work";
                 else if(d.status.includes("完了")) stClass = "badge-done";
+                
+                const ssHtml = (d.ssUrl && d.ssUrl.startsWith("http")) ? `<a href="${d.ssUrl}" target="_blank">画像</a>` : "-";
 
-                // 証拠リンクの有無
-                const ssHtml = (d.ssUrl && d.ssUrl.startsWith("http")) 
-                    ? `<a href="${d.ssUrl}" target="_blank" class="ss-link">画像</a>` 
-                    : "-";
-
-                const row = `<tr>
+                tbody.innerHTML += `<tr>
                     <td>${new Date(d.lastUpdate).toLocaleString('ja-JP')}</td>
                     <td>${d.userName}</td>
                     <td class="${stClass}">${d.status}</td>
                     <td>${d.item || "-"}</td>
-                    <td>${d.amount ? d.amount + "円" : "-"}</td>
+                    <td>${d.amount || "-"}</td>
                     <td>${ssHtml}</td>
-                    <td style="font-size:11px; color:#888;">${d.userId}</td>
+                    <td style="font-size:11px;color:#888;">${d.userId}</td>
                 </tr>`;
-                tbody.innerHTML += row;
             });
-        }
-
-        function searchUser() {
-            const input = document.getElementById('searchId').value.trim();
-            const resultBox = document.getElementById('search-result');
-            const notFound = document.getElementById('not-found');
-            const ssArea = document.getElementById('u-ss-area');
-            const ssLink = document.getElementById('u-ss-link');
-
-            const target = allData.find(d => d.userId === input);
-
-            if (target) {
-                notFound.style.display = 'none';
-                resultBox.style.display = 'block';
-
-                const stElem = document.getElementById('u-status');
-                stElem.innerText = target.status;
-                stElem.className = "value";
-                if(target.status.includes("待ち")) stElem.classList.add("badge-wait");
-                else if(target.status.includes("作業")) stElem.classList.add("badge-work");
-                else if(target.status.includes("完了")) stElem.classList.add("badge-done");
-
-                document.getElementById('u-date').innerText = new Date(target.lastUpdate).toLocaleString('ja-JP');
-                document.getElementById('u-item').innerText = target.item || "-";
-                document.getElementById('u-amount').innerText = target.amount ? target.amount + "円" : "-";
-                document.getElementById('u-ban').innerText = target.banOption === "yes" ? "あり" : "なし";
-
-                // 証拠画像の表示制御
-                if (target.ssUrl && target.ssUrl.startsWith("http")) {
-                    ssArea.style.display = "block";
-                    ssLink.href = target.ssUrl;
-                } else {
-                    ssArea.style.display = "none";
-                }
-            } else {
-                resultBox.style.display = 'none';
-                notFound.style.display = 'block';
-            }
         }
     </script>
 </body>
