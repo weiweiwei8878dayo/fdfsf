@@ -7,7 +7,10 @@
     <style>
         body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; text-align: center; }
         h1 { color: #444; margin-bottom: 20px; }
-        .hidden { display: none; }
+        
+        /* ⚠️ 重要: この .hidden クラスだけで表示/非表示を切り替えます */
+        .hidden { display: none !important; }
+        
         .error { color: red; font-weight: bold; }
         a { text-decoration: none; cursor: pointer; color: #007bff; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; margin: 5px; }
@@ -26,8 +29,9 @@
         .label { font-weight: bold; color: #555; }
         .value { font-weight: bold; margin-left: 10px; }
         
-        /* 管理者用 */
-        #admin-view { max-width: 1200px; margin: 0 auto; display: none; }
+        /* 管理者用 (display: none を削除しました) */
+        #admin-view { max-width: 1200px; margin: 0 auto; }
+        
         .dashboard { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
         .stat-card { background: white; padding: 15px; border-radius: 8px; flex: 1; min-width: 150px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .stat-value { font-size: 1.5em; font-weight: bold; margin-top: 5px; }
@@ -49,7 +53,7 @@
         <h1>🔒 管理者ログイン</h1>
         <input type="password" id="adminPass" placeholder="パスワード">
         <br>
-        <button onclick="adminLogin()">ログイン</button>
+        <button type="button" onclick="adminLogin()">ログイン</button>
         <p style="margin-top:15px;"><a onclick="showUserView()">一般のお客様はこちら</a></p>
     </div>
 
@@ -66,7 +70,7 @@
             <br>
             <input type="text" id="searchOrderId" placeholder="注文ID (例: AB12CD34)">
             <br>
-            <button onclick="fetchUserData()">検索</button>
+            <button type="button" onclick="fetchUserData()">検索</button>
         </div>
         
         <div id="result-area" class="hidden"></div>
@@ -86,10 +90,10 @@
         </div>
 
         <div style="margin-bottom:15px;">
-            <button onclick="filterTable('all')">全て</button>
-            <button onclick="filterTable('wait')">支払い待ち</button>
-            <button onclick="filterTable('work')">作業中</button>
-            <button onclick="filterTable('done')">完了</button>
+            <button type="button" onclick="filterTable('all')">全て</button>
+            <button type="button" onclick="filterTable('wait')">支払い待ち</button>
+            <button type="button" onclick="filterTable('work')">作業中</button>
+            <button type="button" onclick="filterTable('done')">完了</button>
         </div>
 
         <div style="overflow-x:auto;">
@@ -100,6 +104,8 @@
                 <tbody id="admin-tbody"></tbody>
             </table>
         </div>
+        
+        <p style="margin-top:20px;"><a onclick="showLoginView()">ログアウト</a></p>
     </div>
 
     <script>
@@ -137,6 +143,11 @@
             document.getElementById('user-view').classList.remove('hidden');
             document.getElementById('admin-view').classList.add('hidden');
         }
+        function showAdminView() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('user-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.remove('hidden');
+        }
 
         // 管理者ログイン (POST)
         async function adminLogin() {
@@ -149,8 +160,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     globalData = data;
-                    document.getElementById('login-view').classList.add('hidden');
-                    document.getElementById('admin-view').classList.remove('hidden');
+                    showAdminView(); // ここで画面を切り替え
                     updateDashboard(data);
                     renderAdminTable(data);
                 } else {
@@ -191,10 +201,10 @@
             }
         }
 
-        // XSS対策済み描画関数 (textContent使用)
+        // XSS対策済み描画関数
         function renderUserCard(d) {
             const area = document.getElementById('result-area');
-            area.innerHTML = ''; // クリア
+            area.innerHTML = ''; 
 
             const card = document.createElement('div');
             card.className = 'result-card';
@@ -216,7 +226,6 @@
                 val.className = 'value';
                 val.textContent = f.v;
                 
-                // ステータス色分け
                 if (f.l === 'ステータス') {
                     if (d.status.includes('待ち')) val.classList.add('badge-wait');
                     else if (d.status.includes('作業')) val.classList.add('badge-work');
@@ -229,7 +238,6 @@
                 card.appendChild(p);
             });
 
-            // 画像リンク
             if (d.ssUrl && d.ssUrl.startsWith("http")) {
                 const p = document.createElement('p');
                 const label = document.createElement('span');
@@ -265,7 +273,6 @@
                 addCell(new Date(d.lastUpdate).toLocaleString('ja-JP'));
                 addCell(d.userName);
                 
-                // ステータスセル
                 const tdSt = document.createElement('td');
                 tdSt.textContent = d.status;
                 if(d.status.includes("待ち")) tdSt.classList.add("badge-wait");
@@ -277,7 +284,6 @@
                 addCell(d.item);
                 addCell(d.amount);
 
-                // 画像リンク
                 const tdImg = document.createElement('td');
                 if (d.ssUrl && d.ssUrl.startsWith("http")) {
                     const a = document.createElement('a');
