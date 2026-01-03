@@ -6,33 +6,27 @@ exports.handler = async (event) => {
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     };
-
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers };
 
     const store = getStore("daikou_data");
 
-    // --- 進捗確認（GET） ---
+    // 進捗確認 (GET)
     if (event.httpMethod === "GET") {
-        const orderId = event.queryStringParameters.id;
-        if (!orderId) return { statusCode: 400, headers, body: "IDが必要です" };
-
-        const data = await store.get(orderId, { type: "json" });
-        if (!data) return { statusCode: 404, headers, body: "依頼が見つかりません" };
-
+        const id = event.queryStringParameters.id;
+        const data = await store.get(id, { type: "json" });
+        if (!data) return { statusCode: 404, headers, body: JSON.stringify({ error: "No data" }) };
         return { statusCode: 200, headers, body: JSON.stringify(data) };
     }
 
-    // --- Botからの更新（POST） ---
+    // ステータス更新 (POST)
     if (event.httpMethod === "POST") {
         const body = JSON.parse(event.body);
-        // IDはユーザーIDなど一意のものを使用
-        const orderId = body.userId; 
+        const id = body.userId; // Discord ID
         
-        // 既存データがあればマージ、なければ新規
-        let current = await store.get(orderId, { type: "json" }) || {};
-        const updated = { ...current, ...body, lastUpdate: new Date().toISOString() };
+        let current = await store.get(id, { type: "json" }) || {};
+        const newData = { ...current, ...body };
         
-        await store.setJSON(orderId, updated);
-        return { statusCode: 200, headers, body: JSON.stringify({ status: "ok" }) };
+        await store.setJSON(id, newData);
+        return { statusCode: 200, headers, body: "OK" };
     }
 };
