@@ -13,12 +13,12 @@
   {
     "userId": "1144329703084281906",
     "userName": null,
-    "status": "作業中",
-    "lastUpdate": "2026-01-04T11:46:32.322Z",
+    "status": "完了",
+    "lastUpdate": "2026-01-04T12:13:25.084Z",
     "item": "1億コイン",
     "amount": "1100",
     "banOption": "yes",
-    "ssUrl": "-",
+    "ssUrl": "https://google.com",
     "orderId": "C3V6TZIW"
   }
 ]
