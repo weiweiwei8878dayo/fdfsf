@@ -1,9 +1,9 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": null,
+    "userName": "tanakatakeshi__1",
     "status": "作業中",
-    "lastUpdate": "2026-01-04T14:52:26.302Z",
+    "lastUpdate": "2026-01-04T14:52:31.717Z",
     "item": "猫缶カンスト",
     "amount": "150",
     "banOption": "no",
@@ -14,6 +14,11 @@
         "sender": "Admin",
         "text": "おっくく",
         "time": "2026/1/4 23:52:26"
+      },
+      {
+        "sender": "User",
+        "text": "だｓｄ",
+        "time": "2026/1/4 23:52:31"
       }
     ]
   },
