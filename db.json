@@ -3,13 +3,19 @@
     "userId": "1262777743368781834",
     "userName": null,
     "status": "作業中",
-    "lastUpdate": "2026-01-04T14:16:57.801Z",
+    "lastUpdate": "2026-01-04T14:17:17.522Z",
     "item": "XPカンスト",
     "amount": "150",
     "banOption": "no",
     "ssUrl": "-",
     "orderId": "SSY0JRSV",
-    "messages": []
+    "messages": [
+      {
+        "sender": "Admin",
+        "text": "ad",
+        "time": "2026/1/4 23:17:17"
+      }
+    ]
   },
   {
     "userId": "1144329703084281906",
