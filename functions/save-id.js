@@ -27,19 +27,22 @@ exports.handler = async (event) => {
         const currentSS = (ssUrl !== undefined && ssUrl !== null) ? ssUrl : (index !== -1 ? json[index].ssUrl : "-");
         const currentOrderId = orderId || (index !== -1 ? json[index].orderId : null);
         
-        // ✨ チャット履歴の更新
+        // チャット履歴
         let currentMessages = (index !== -1 && json[index].messages) ? json[index].messages : [];
         if (chatMsg) {
             currentMessages.push(chatMsg);
             if (currentMessages.length > 10) currentMessages = currentMessages.slice(-10);
         }
-        // 新規注文時（orderIdが送られてきた時）はチャット履歴もリセットしたい場合はここで空にする
         if (orderId && index !== -1 && orderId !== json[index].orderId) {
-             currentMessages = [];
+             currentMessages = []; // 新規注文時はリセット
         }
 
         const newEntry = {
-            userId, userName, status, lastUpdate,
+            userId,
+            // 名前が送信されていれば更新、なければ既存、なければ "Unknown"
+            userName: userName || (index !== -1 ? json[index].userName : "Unknown"),
+            status,
+            lastUpdate,
             item: item || (index !== -1 ? json[index].item : "-"),
             amount: amount || (index !== -1 ? json[index].amount : 0),
             banOption: banOption || (index !== -1 ? json[index].banOption : "-"),
