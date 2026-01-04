@@ -1,21 +1,15 @@
 [
   {
     "userId": "1262777743368781834",
-    "userName": null,
-    "status": "キャンセル",
-    "lastUpdate": "2026-01-04T14:29:39.284Z",
-    "item": "XPカンスト",
-    "amount": "150",
+    "userName": "tanakatakeshi__1",
+    "status": "支払い確認待ち",
+    "lastUpdate": "2026-01-04T14:47:49.914Z",
+    "item": "猫缶カンスト, XPカンスト",
+    "amount": "300",
     "banOption": "no",
     "ssUrl": "-",
-    "orderId": "SSY0JRSV",
-    "messages": [
-      {
-        "sender": "Admin",
-        "text": "ad",
-        "time": "2026/1/4 23:17:17"
-      }
-    ]
+    "orderId": "5IVBQJ5Y",
+    "messages": []
   },
   {
     "userId": "1144329703084281906",
