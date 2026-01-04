@@ -8,42 +8,41 @@
         body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; text-align: center; }
         h1 { color: #444; margin-bottom: 20px; }
         
-        /* ⚠️ 重要: この .hidden クラスだけで表示/非表示を切り替えます */
         .hidden { display: none !important; }
-        
         .error { color: red; font-weight: bold; }
         a { text-decoration: none; cursor: pointer; color: #007bff; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; margin: 5px; }
         button { padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
         button:hover { opacity: 0.9; }
 
-        /* コンテナ */
         .container { background: white; padding: 40px; border-radius: 10px; max-width: 600px; margin: 30px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-
-        /* 待ち人数 */
         .queue-alert { background: #e9ecef; color: #555; padding: 10px; border-radius: 5px; margin-bottom: 20px; display: inline-block; }
         .queue-count { color: #d9534f; font-weight: bold; font-size: 1.2em; }
 
-        /* 結果カード */
         .result-card { background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 5px solid #28a745; margin-top: 20px; text-align: left; }
         .label { font-weight: bold; color: #555; }
         .value { font-weight: bold; margin-left: 10px; }
         
-        /* 管理者用 (display: none を削除しました) */
         #admin-view { max-width: 1200px; margin: 0 auto; }
-        
         .dashboard { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
         .stat-card { background: white; padding: 15px; border-radius: 8px; flex: 1; min-width: 150px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .stat-value { font-size: 1.5em; font-weight: bold; margin-top: 5px; }
         
         table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
         th { background: #007bff; color: white; }
         
         .badge-wait { color: #d9534f; }
         .badge-work { color: #f0ad4e; }
         .badge-done { color: #5cb85c; }
         .badge-cancel { color: #999; text-decoration: line-through; }
+
+        /* チャット表示用 */
+        .chat-box { font-size: 0.85em; text-align: left; max-height: 120px; overflow-y: auto; background: #f8f9fa; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 200px; }
+        .chat-msg { margin-bottom: 6px; border-bottom: 1px dashed #eee; padding-bottom: 2px; }
+        .sender-admin { color: #007bff; font-weight: bold; }
+        .sender-user { color: #28a745; font-weight: bold; }
+        .chat-time { font-size: 0.7em; color: #999; margin-left: 5px; float: right; }
     </style>
 </head>
 <body>
@@ -60,11 +59,7 @@
     <!-- ▼ お客様用画面 ▼ -->
     <div id="user-view" class="container hidden">
         <h1>📦 ご依頼状況の確認</h1>
-        
-        <div class="queue-alert">
-            現在、<span id="queue-count" class="queue-count">-</span> 件の依頼が進行中です🔥
-        </div>
-
+        <div class="queue-alert">現在、<span id="queue-count" class="queue-count">-</span> 件の依頼が進行中です🔥</div>
         <div>
             <input type="text" id="searchId" placeholder="ユーザーID (例: 123...)">
             <br>
@@ -72,7 +67,6 @@
             <br>
             <button type="button" onclick="fetchUserData()">検索</button>
         </div>
-        
         <div id="result-area" class="hidden"></div>
         <p id="msg" class="hidden error"></p>
         <p style="margin-top:15px;"><a onclick="showLoginView()">管理者ログイン</a></p>
@@ -81,30 +75,26 @@
     <!-- ▼ 管理者用画面 ▼ -->
     <div id="admin-view" class="hidden">
         <h1>🔧 管理者ダッシュボード</h1>
-        
         <div class="dashboard">
             <div class="stat-card"><div>💰 今月の売上</div><div class="stat-value" id="stat-month" style="color:#28a745">0円</div></div>
             <div class="stat-card"><div>💴 全期間の売上</div><div class="stat-value" id="stat-total" style="color:#28a745">0円</div></div>
             <div class="stat-card"><div>⚠️ 支払い待ち</div><div class="stat-value" id="stat-wait" style="color:#d9534f">0</div></div>
             <div class="stat-card"><div>🛠️ 作業中</div><div class="stat-value" id="stat-work" style="color:#f0ad4e">0</div></div>
         </div>
-
         <div style="margin-bottom:15px;">
             <button type="button" onclick="filterTable('all')">全て</button>
             <button type="button" onclick="filterTable('wait')">支払い待ち</button>
             <button type="button" onclick="filterTable('work')">作業中</button>
             <button type="button" onclick="filterTable('done')">完了</button>
         </div>
-
         <div style="overflow-x:auto;">
             <table>
                 <thead>
-                    <tr><th>日時</th><th>名前</th><th>ステータス</th><th>内容</th><th>金額</th><th>証拠</th><th>ID</th></tr>
+                    <tr><th>日時</th><th>名前</th><th>ステータス</th><th>内容</th><th>✉️ チャット履歴</th><th>金額</th><th>証拠</th><th>ID</th></tr>
                 </thead>
                 <tbody id="admin-tbody"></tbody>
             </table>
         </div>
-        
         <p style="margin-top:20px;"><a onclick="showLoginView()">ログアウト</a></p>
     </div>
 
@@ -116,11 +106,8 @@
             const id = params.get('id');
             const orderId = params.get('orderId');
 
-            // 待ち人数取得
             fetch('/.netlify/functions/get-data?id=queue_count')
-                .then(r => r.json()).then(d => {
-                    document.getElementById('queue-count').textContent = d.count || 0;
-                }).catch(() => {});
+                .then(r => r.json()).then(d => { document.getElementById('queue-count').textContent = d.count || 0; }).catch(() => {});
 
             if (id && orderId) {
                 document.getElementById('searchId').value = id;
@@ -132,7 +119,6 @@
             }
         };
 
-        // 画面切り替え
         function showLoginView() {
             document.getElementById('login-view').classList.remove('hidden');
             document.getElementById('user-view').classList.add('hidden');
@@ -149,7 +135,6 @@
             document.getElementById('admin-view').classList.remove('hidden');
         }
 
-        // 管理者ログイン (POST)
         async function adminLogin() {
             const password = document.getElementById('adminPass').value;
             try {
@@ -160,16 +145,13 @@
                 if (res.ok) {
                     const data = await res.json();
                     globalData = data;
-                    showAdminView(); // ここで画面を切り替え
+                    showAdminView();
                     updateDashboard(data);
                     renderAdminTable(data);
-                } else {
-                    alert('パスワードが違います');
-                }
+                } else { alert('パスワードが違います'); }
             } catch (e) { alert('通信エラー'); }
         }
 
-        // 一般ユーザー検索
         async function fetchUserData() {
             const userId = document.getElementById('searchId').value.trim();
             const orderId = document.getElementById('searchOrderId').value.trim();
@@ -191,21 +173,16 @@
                     resultArea.classList.remove('hidden');
                     renderUserCard(data[0]);
                 } else {
-                    msg.textContent = "データが見つかりません (IDか注文IDが間違っています)";
+                    msg.textContent = "データなし (入力ミスを確認してください)";
                     msg.classList.remove('hidden');
                     resultArea.classList.add('hidden');
                 }
-            } catch (e) {
-                msg.textContent = "通信エラー";
-                msg.classList.remove('hidden');
-            }
+            } catch (e) { msg.textContent = "通信エラー"; msg.classList.remove('hidden'); }
         }
 
-        // XSS対策済み描画関数
         function renderUserCard(d) {
             const area = document.getElementById('result-area');
             area.innerHTML = ''; 
-
             const card = document.createElement('div');
             card.className = 'result-card';
 
@@ -225,17 +202,13 @@
                 const val = document.createElement('span');
                 val.className = 'value';
                 val.textContent = f.v;
-                
                 if (f.l === 'ステータス') {
                     if (d.status.includes('待ち')) val.classList.add('badge-wait');
                     else if (d.status.includes('作業')) val.classList.add('badge-work');
                     else if (d.status.includes('完了')) val.classList.add('badge-done');
                     else if (d.status.includes('キャンセル')) val.classList.add('badge-cancel');
                 }
-
-                p.appendChild(label);
-                p.appendChild(val);
-                card.appendChild(p);
+                p.appendChild(label); p.appendChild(val); card.appendChild(p);
             });
 
             if (d.ssUrl && d.ssUrl.startsWith("http")) {
@@ -244,14 +217,9 @@
                 label.className = 'label';
                 label.textContent = "証拠: ";
                 const a = document.createElement('a');
-                a.href = d.ssUrl;
-                a.target = "_blank";
-                a.textContent = "📷 画像を確認";
-                p.appendChild(label);
-                p.appendChild(a);
-                card.appendChild(p);
+                a.href = d.ssUrl; a.target = "_blank"; a.textContent = "📷 画像を確認";
+                p.appendChild(label); p.appendChild(a); card.appendChild(p);
             }
-
             area.appendChild(card);
         }
 
@@ -262,7 +230,6 @@
 
             data.forEach(d => {
                 const tr = document.createElement('tr');
-                
                 const addCell = (text, className = null) => {
                     const td = document.createElement('td');
                     td.textContent = text || "-";
@@ -278,22 +245,47 @@
                 if(d.status.includes("待ち")) tdSt.classList.add("badge-wait");
                 else if(d.status.includes("作業")) tdSt.classList.add("badge-work");
                 else if(d.status.includes("完了")) tdSt.classList.add("badge-done");
-                else if(d.status.includes("キャンセル")) tdSt.classList.add("badge-cancel");
                 tr.appendChild(tdSt);
 
                 addCell(d.item);
-                addCell(d.amount);
 
+                // チャット履歴セル (HTML生成)
+                const tdChat = document.createElement('td');
+                if (d.messages && d.messages.length > 0) {
+                    const box = document.createElement('div');
+                    box.className = 'chat-box';
+                    d.messages.forEach(msg => {
+                        const div = document.createElement('div');
+                        div.className = 'chat-msg';
+                        const senderName = msg.sender === 'Admin' ? '自分' : '客';
+                        const senderClass = msg.sender === 'Admin' ? 'sender-admin' : 'sender-user';
+                        const time = msg.time.split(' ')[1] || '';
+                        
+                        // 安全にHTML構築
+                        const spanName = document.createElement('span');
+                        spanName.className = senderClass;
+                        spanName.textContent = senderName + ": ";
+                        const spanText = document.createElement('span');
+                        spanText.textContent = msg.text;
+                        const spanTime = document.createElement('span');
+                        spanTime.className = 'chat-time';
+                        spanTime.textContent = time;
+
+                        div.appendChild(spanName); div.appendChild(spanText); div.appendChild(spanTime);
+                        box.appendChild(div);
+                    });
+                    tdChat.appendChild(box);
+                } else { tdChat.textContent = "-"; }
+                tr.appendChild(tdChat);
+
+                addCell(d.amount);
+                
                 const tdImg = document.createElement('td');
                 if (d.ssUrl && d.ssUrl.startsWith("http")) {
                     const a = document.createElement('a');
-                    a.href = d.ssUrl;
-                    a.target = "_blank";
-                    a.textContent = "📷";
+                    a.href = d.ssUrl; a.target = "_blank"; a.textContent = "📷";
                     tdImg.appendChild(a);
-                } else {
-                    tdImg.textContent = "-";
-                }
+                } else { tdImg.textContent = "-"; }
                 tr.appendChild(tdImg);
 
                 addCell(d.userId);
