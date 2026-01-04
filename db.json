@@ -3,13 +3,19 @@
     "userId": "1262777743368781834",
     "userName": null,
     "status": "作業中",
-    "lastUpdate": "2026-01-04T14:47:57.792Z",
+    "lastUpdate": "2026-01-04T14:48:06.521Z",
     "item": "猫缶カンスト, XPカンスト",
     "amount": "300",
     "banOption": "no",
     "ssUrl": "-",
     "orderId": "5IVBQJ5Y",
-    "messages": []
+    "messages": [
+      {
+        "sender": "Admin",
+        "text": "ad",
+        "time": "2026/1/4 23:48:06"
+      }
+    ]
   },
   {
     "userId": "1144329703084281906",
