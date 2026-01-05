@@ -3,13 +3,19 @@
     "userId": "1262777743368781834",
     "userName": "たけひこ",
     "status": "作業中",
-    "lastUpdate": "2026-01-05T15:47:12.496Z",
+    "lastUpdate": "2026-01-05T15:47:18.844Z",
     "item": "猫缶カンスト",
     "amount": "950",
     "banOption": "yes",
     "ssUrl": "-",
     "orderId": "USTHXRMN",
-    "messages": []
+    "messages": [
+      {
+        "sender": "Admin",
+        "text": "res",
+        "time": "2026/1/6 0:47:18"
+      }
+    ]
   },
   {
     "userId": "1144329703084281906",
