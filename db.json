@@ -37,12 +37,18 @@
     "userId": "1457396801736015964",
     "userName": "あいうえお",
     "status": "作業中",
-    "lastUpdate": "2026-01-05T05:17:50.316Z",
+    "lastUpdate": "2026-01-05T05:17:59.062Z",
     "item": "1億コイン",
     "amount": "300",
     "banOption": "no",
     "ssUrl": "https://google.com",
     "orderId": "4LOJD78B",
-    "messages": []
+    "messages": [
+      {
+        "sender": "Admin",
+        "text": "Hi",
+        "time": "2026/1/5 14:17:58"
+      }
+    ]
   }
 ]
