@@ -3,316 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>代行ステータス確認</title>
+    <title>代行管理パネル</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; text-align: center; }
-        h1 { color: #444; margin-bottom: 20px; }
+        body { font-family: sans-serif; background: #f4f4f9; color: #333; margin: 0; padding: 0; }
         
+        /* ツールバー (ナビゲーション) */
+        .navbar { background: #333; padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; }
+        .nav-links button { background: none; border: none; color: #ddd; font-size: 16px; cursor: pointer; margin-left: 20px; font-weight: bold; }
+        .nav-links button.active { color: #fff; border-bottom: 2px solid #28a745; }
+        .nav-links button:hover { color: #fff; }
+
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
         .hidden { display: none !important; }
-        .error { color: red; font-weight: bold; }
-        a { text-decoration: none; cursor: pointer; color: #007bff; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; margin: 5px; }
-        button { padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
-        button:hover { opacity: 0.9; }
-
-        .container { background: white; padding: 40px; border-radius: 10px; max-width: 600px; margin: 30px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .queue-alert { background: #e9ecef; color: #555; padding: 10px; border-radius: 5px; margin-bottom: 20px; display: inline-block; }
-        .queue-count { color: #d9534f; font-weight: bold; font-size: 1.2em; }
-
-        .result-card { background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 5px solid #28a745; margin-top: 20px; text-align: left; }
-        .label { font-weight: bold; color: #555; }
-        .value { font-weight: bold; margin-left: 10px; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button.btn { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button.btn-danger { background: #d9534f; }
         
-        #admin-view { max-width: 1200px; margin: 0 auto; }
-        .dashboard { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 15px; border-radius: 8px; flex: 1; min-width: 150px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        /* ログイン画面 */
+        #login-view { margin-top: 100px; text-align: center; }
+        
+        /* ダッシュボード */
+        .dashboard { display: flex; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; flex: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
         .stat-value { font-size: 1.5em; font-weight: bold; margin-top: 5px; }
         
-        table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
+        table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
         th { background: #007bff; color: white; }
-        
-        .badge-wait { color: #d9534f; }
-        .badge-work { color: #f0ad4e; }
-        .badge-done { color: #5cb85c; }
-        .badge-cancel { color: #999; text-decoration: line-through; }
 
-        .chat-box { font-size: 0.85em; text-align: left; max-height: 120px; overflow-y: auto; background: #f8f9fa; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 200px; }
-        .chat-msg { margin-bottom: 6px; border-bottom: 1px dashed #eee; padding-bottom: 2px; }
-        .sender-admin { color: #007bff; font-weight: bold; }
-        .sender-user { color: #28a745; font-weight: bold; }
-        .chat-time { font-size: 0.7em; color: #999; margin-left: 5px; float: right; }
+        /* 商品管理 */
+        .product-group { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .product-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .product-row input[type="text"] { flex: 2; }
+        .product-row input[type="number"] { flex: 1; }
+
+        /* チャット履歴 */
+        .chat-box { max-height: 100px; overflow-y: auto; font-size: 0.85em; }
     </style>
 </head>
 <body>
 
-    <div id="login-view" class="container">
+    <!-- ▼ ナビゲーションバー (ログイン後表示) ▼ -->
+    <nav id="navbar" class="navbar hidden">
+        <div style="font-weight:bold; font-size:1.2em;">🔧 管理パネル</div>
+        <div class="nav-links">
+            <button id="tab-dash" class="active" onclick="switchTab('dash')">📊 ダッシュボード</button>
+            <button id="tab-prod" onclick="switchTab('prod')">✏️ 商品管理</button>
+            <button onclick="logout()">ログアウト</button>
+        </div>
+    </nav>
+
+    <!-- ▼ ログイン画面 ▼ -->
+    <div id="login-view">
         <h1>🔒 管理者ログイン</h1>
         <input type="password" id="adminPass" placeholder="パスワード">
-        <br>
-        <button type="button" onclick="adminLogin()">ログイン</button>
-        <p style="margin-top:15px;"><a onclick="showUserView()">一般のお客様はこちら</a></p>
+        <button class="btn" onclick="login()">ログイン</button>
+        <p style="margin-top:20px; font-size:0.9em; color:#666;">※ログイン状態は保存されます</p>
     </div>
 
-    <div id="user-view" class="container hidden">
-        <h1>📦 ご依頼状況の確認</h1>
-        <div class="queue-alert">現在、<span id="queue-count" class="queue-count">-</span> 件の依頼が進行中です🔥</div>
-        <div>
-            <input type="text" id="searchId" placeholder="ユーザーID (例: 123...)">
-            <br>
-            <input type="text" id="searchOrderId" placeholder="注文ID (例: AB12CD34)">
-            <br>
-            <button type="button" onclick="fetchUserData()">検索</button>
+    <div class="container">
+        <!-- ▼ ダッシュボード画面 ▼ -->
+        <div id="dash-view" class="hidden">
+            <div class="dashboard">
+                <div class="stat-card"><div>💰 今月の売上</div><div class="stat-value" id="stat-month" style="color:#28a745">-</div></div>
+                <div class="stat-card"><div>💴 総売上</div><div class="stat-value" id="stat-total" style="color:#28a745">-</div></div>
+                <div class="stat-card"><div>⚠️ 支払い待ち</div><div class="stat-value" id="stat-wait" style="color:#d9534f">-</div></div>
+                <div class="stat-card"><div>🛠️ 作業中</div><div class="stat-value" id="stat-work" style="color:#f0ad4e">-</div></div>
+            </div>
+            
+            <div style="margin-bottom:10px;">
+                <button class="btn" onclick="fetchOrders()">🔄 更新</button>
+            </div>
+            <div style="overflow-x:auto;">
+                <table id="order-table">
+                    <thead><tr><th>日時</th><th>名前</th><th>ステータス</th><th>内容</th><th>チャット</th><th>金額</th><th>証拠</th><th>ID</th></tr></thead>
+                    <tbody id="order-tbody"></tbody>
+                </table>
+            </div>
         </div>
-        <div id="result-area" class="hidden"></div>
-        <p id="msg" class="hidden error"></p>
-        <p style="margin-top:15px;"><a onclick="showLoginView()">管理者ログイン</a></p>
-    </div>
 
-    <div id="admin-view" class="hidden">
-        <h1>🔧 管理者ダッシュボード</h1>
-        <div class="dashboard">
-            <div class="stat-card"><div>💰 今月の売上</div><div class="stat-value" id="stat-month" style="color:#28a745">0円</div></div>
-            <div class="stat-card"><div>💴 全期間の売上</div><div class="stat-value" id="stat-total" style="color:#28a745">0円</div></div>
-            <div class="stat-card"><div>⚠️ 支払い待ち</div><div class="stat-value" id="stat-wait" style="color:#d9534f">0</div></div>
-            <div class="stat-card"><div>🛠️ 作業中</div><div class="stat-value" id="stat-work" style="color:#f0ad4e">0</div></div>
+        <!-- ▼ 商品管理画面 ▼ -->
+        <div id="prod-view" class="hidden">
+            <h2>✏️ メニュー編集</h2>
+            <p>Botのメニューに表示される項目と価格を編集できます。</p>
+            
+            <div class="product-group">
+                <h3>🐈 にゃんこ大戦争</h3>
+                <div id="list-nyanko"></div>
+                <button class="btn" onclick="addRow('nyanko')">＋ 項目を追加</button>
+            </div>
+
+            <div class="product-group">
+                <h3>🎡 ツムツム</h3>
+                <div id="list-tsumu"></div>
+                <button class="btn" onclick="addRow('tsumu')">＋ 項目を追加</button>
+            </div>
+
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn" style="padding:15px 40px; font-size:1.2em;" onclick="saveProducts()">💾 保存して反映</button>
+            </div>
         </div>
-        <div style="margin-bottom:15px;">
-            <button type="button" onclick="filterTable('all')">全て</button>
-            <button type="button" onclick="filterTable('wait')">支払い待ち</button>
-            <button type="button" onclick="filterTable('work')">作業中</button>
-            <button type="button" onclick="filterTable('done')">完了</button>
-        </div>
-        <div style="overflow-x:auto;">
-            <table>
-                <thead>
-                    <tr><th>日時</th><th>名前</th><th>ステータス</th><th>内容</th><th>✉️ チャット履歴</th><th>金額</th><th>証拠</th><th>ID</th></tr>
-                </thead>
-                <tbody id="admin-tbody"></tbody>
-            </table>
-        </div>
-        <p style="margin-top:20px;"><a onclick="showLoginView()">ログアウト</a></p>
     </div>
 
     <script>
-        let globalData = [];
+        // --- クッキー操作関数 ---
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days*24*60*60*1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+        }
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i=0;i < ca.length;i++) {
+                let c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+            }
+            return null;
+        }
+        function eraseCookie(name) { document.cookie = name+'=; Max-Age=-99999999;'; }
+
+        // --- メイン処理 ---
+        let currentPass = "";
 
         window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
-            const orderId = params.get('orderId');
-
-            fetch('/.netlify/functions/get-data?id=queue_count')
-                .then(r => r.json()).then(d => { document.getElementById('queue-count').textContent = d.count || 0; }).catch(() => {});
-
-            if (id && orderId) {
-                document.getElementById('searchId').value = id;
-                document.getElementById('searchOrderId').value = orderId;
-                showUserView();
-                fetchUserData();
-            } else {
-                showLoginView();
+            const savedPass = getCookie("admin_pass");
+            if (savedPass) {
+                document.getElementById('adminPass').value = savedPass;
+                login();
             }
         };
 
-        function showLoginView() {
-            document.getElementById('login-view').classList.remove('hidden');
-            document.getElementById('user-view').classList.add('hidden');
-            document.getElementById('admin-view').classList.add('hidden');
-        }
-        function showUserView() {
-            document.getElementById('login-view').classList.add('hidden');
-            document.getElementById('user-view').classList.remove('hidden');
-            document.getElementById('admin-view').classList.add('hidden');
-        }
-        function showAdminView() {
-            document.getElementById('login-view').classList.add('hidden');
-            document.getElementById('user-view').classList.add('hidden');
-            document.getElementById('admin-view').classList.remove('hidden');
-        }
-
-        async function adminLogin() {
-            const password = document.getElementById('adminPass').value;
+        async function login() {
+            const pass = document.getElementById('adminPass').value;
+            // 認証チェック (ダミー取得で確認)
             try {
                 const res = await fetch('/.netlify/functions/get-data', {
-                    method: 'POST',
-                    body: JSON.stringify({ password })
+                    method: 'POST', body: JSON.stringify({ password: pass })
                 });
                 if (res.ok) {
-                    const data = await res.json();
-                    globalData = data;
-                    showAdminView();
-                    updateDashboard(data);
-                    renderAdminTable(data);
-                } else { alert('パスワードが違います'); }
-            } catch (e) { alert('通信エラー'); }
-        }
-
-        async function fetchUserData() {
-            const userId = document.getElementById('searchId').value.trim();
-            const orderId = document.getElementById('searchOrderId').value.trim();
-            const msg = document.getElementById('msg');
-            const resultArea = document.getElementById('result-area');
-
-            if (!userId || !orderId) {
-                msg.textContent = "IDと注文IDの両方を入力してください";
-                msg.classList.remove('hidden');
-                return;
-            }
-
-            try {
-                const res = await fetch(`/.netlify/functions/get-data?id=${userId}&orderId=${orderId}`);
-                const data = await res.json();
-                
-                if (data.length > 0) {
-                    msg.classList.add('hidden');
-                    resultArea.classList.remove('hidden');
-                    renderUserCard(data[0]);
+                    currentPass = pass;
+                    setCookie("admin_pass", pass, 7); // 7日間保存
+                    document.getElementById('login-view').classList.add('hidden');
+                    document.getElementById('navbar').classList.remove('hidden');
+                    switchTab('dash');
                 } else {
-                    msg.textContent = "データなし (入力ミスを確認してください)";
-                    msg.classList.remove('hidden');
-                    resultArea.classList.add('hidden');
+                    alert("パスワードが違います");
+                    eraseCookie("admin_pass");
                 }
-            } catch (e) { msg.textContent = "通信エラー"; msg.classList.remove('hidden'); }
+            } catch(e) { alert("通信エラー"); }
         }
 
-        function renderUserCard(d) {
-            const area = document.getElementById('result-area');
-            area.innerHTML = ''; 
-            const card = document.createElement('div');
-            card.className = 'result-card';
+        function logout() {
+            eraseCookie("admin_pass");
+            location.reload();
+        }
 
-            const fields = [
-                { l: 'ステータス', v: d.status },
-                { l: '更新日時', v: new Date(d.lastUpdate).toLocaleString('ja-JP') },
-                { l: '内容', v: d.item },
-                { l: '金額', v: d.amount ? d.amount + "円" : "-" },
-                { l: 'BAN保証', v: d.banOption === "yes" ? "あり" : "なし" }
-            ];
+        function switchTab(tab) {
+            document.getElementById('dash-view').classList.add('hidden');
+            document.getElementById('prod-view').classList.add('hidden');
+            document.getElementById('tab-dash').classList.remove('active');
+            document.getElementById('tab-prod').classList.remove('active');
 
-            fields.forEach(f => {
-                const p = document.createElement('p');
-                const label = document.createElement('span');
-                label.className = 'label';
-                label.textContent = f.l + ": ";
-                const val = document.createElement('span');
-                val.className = 'value';
-                val.textContent = f.v;
-                if (f.l === 'ステータス') {
-                    if (d.status.includes('待ち')) val.classList.add('badge-wait');
-                    else if (d.status.includes('作業')) val.classList.add('badge-work');
-                    else if (d.status.includes('完了')) val.classList.add('badge-done');
-                    else if (d.status.includes('キャンセル')) val.classList.add('badge-cancel');
-                }
-                p.appendChild(label); p.appendChild(val); card.appendChild(p);
-            });
-
-            if (d.ssUrl && d.ssUrl.startsWith("http")) {
-                const p = document.createElement('p');
-                const label = document.createElement('span');
-                label.className = 'label';
-                label.textContent = "証拠: ";
-                const a = document.createElement('a');
-                a.href = d.ssUrl; a.target = "_blank"; a.textContent = "📷 画像を確認";
-                p.appendChild(label); p.appendChild(a); card.appendChild(p);
+            if (tab === 'dash') {
+                document.getElementById('dash-view').classList.remove('hidden');
+                document.getElementById('tab-dash').classList.add('active');
+                fetchOrders();
+            } else {
+                document.getElementById('prod-view').classList.remove('hidden');
+                document.getElementById('tab-prod').classList.add('active');
+                fetchProducts();
             }
-            area.appendChild(card);
         }
 
-        function renderAdminTable(data) {
-            const tbody = document.getElementById('admin-tbody');
+        // --- 注文データ取得 (ダッシュボード) ---
+        async function fetchOrders() {
+            const res = await fetch('/.netlify/functions/get-data', {
+                method: 'POST', body: JSON.stringify({ password: currentPass })
+            });
+            const data = await res.json();
+            renderTable(data);
+            calcStats(data);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('order-tbody');
             tbody.innerHTML = "";
             data.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
-
             data.forEach(d => {
-                const tr = document.createElement('tr');
-                const addCell = (text, className = null) => {
-                    const td = document.createElement('td');
-                    td.textContent = text || "-";
-                    if (className) td.classList.add(className);
-                    tr.appendChild(td);
-                };
-
-                addCell(new Date(d.lastUpdate).toLocaleString('ja-JP'));
-                addCell(d.userName); // ユーザー名を表示
+                let stStyle = "";
+                if(d.status.includes("待ち")) stStyle="color:#d9534f;font-weight:bold;";
+                if(d.status.includes("作業")) stStyle="color:#f0ad4e;font-weight:bold;";
+                if(d.status.includes("完了")) stStyle="color:#5cb85c;font-weight:bold;";
                 
-                const tdSt = document.createElement('td');
-                tdSt.textContent = d.status;
-                if(d.status.includes("待ち")) tdSt.classList.add("badge-wait");
-                else if(d.status.includes("作業")) tdSt.classList.add("badge-work");
-                else if(d.status.includes("完了")) tdSt.classList.add("badge-done");
-                tr.appendChild(tdSt);
+                let chatHtml = "-";
+                if(d.messages && d.messages.length > 0) {
+                    chatHtml = `<div class="chat-box">${d.messages.map(m=>`<div><b>${m.sender==="Admin"?"自分":"客"}:</b> ${m.text}</div>`).join('')}</div>`;
+                }
+                const ssHtml = d.ssUrl?.startsWith("http") ? `<a href="${d.ssUrl}" target="_blank">📷</a>` : "-";
 
-                addCell(d.item);
-
-                // チャット履歴
-                const tdChat = document.createElement('td');
-                if (d.messages && d.messages.length > 0) {
-                    const box = document.createElement('div');
-                    box.className = 'chat-box';
-                    d.messages.forEach(msg => {
-                        const div = document.createElement('div');
-                        div.className = 'chat-msg';
-                        const senderName = msg.sender === 'Admin' ? '自分' : '客';
-                        const senderClass = msg.sender === 'Admin' ? 'sender-admin' : 'sender-user';
-                        const time = msg.time.split(' ')[1] || '';
-                        
-                        const spanName = document.createElement('span');
-                        spanName.className = senderClass;
-                        spanName.textContent = senderName + ": ";
-                        const spanText = document.createElement('span');
-                        spanText.textContent = msg.text;
-                        const spanTime = document.createElement('span');
-                        spanTime.className = 'chat-time';
-                        spanTime.textContent = time;
-
-                        div.appendChild(spanName); div.appendChild(spanText); div.appendChild(spanTime);
-                        box.appendChild(div);
-                    });
-                    tdChat.appendChild(box);
-                } else { tdChat.textContent = "-"; }
-                tr.appendChild(tdChat);
-
-                addCell(d.amount);
-                
-                const tdImg = document.createElement('td');
-                if (d.ssUrl && d.ssUrl.startsWith("http")) {
-                    const a = document.createElement('a');
-                    a.href = d.ssUrl; a.target = "_blank"; a.textContent = "📷";
-                    tdImg.appendChild(a);
-                } else { tdImg.textContent = "-"; }
-                tr.appendChild(tdImg);
-
-                addCell(d.userId);
-                tbody.appendChild(tr);
+                tbody.innerHTML += `<tr>
+                    <td>${new Date(d.lastUpdate).toLocaleString('ja-JP')}</td>
+                    <td>${d.userName}</td>
+                    <td style="${stStyle}">${d.status}</td>
+                    <td>${d.item||"-"}</td>
+                    <td>${chatHtml}</td>
+                    <td>${d.amount}</td>
+                    <td>${ssHtml}</td>
+                    <td style="font-size:0.8em;color:#999;">${d.userId}</td>
+                </tr>`;
             });
         }
 
-        function updateDashboard(data) {
-            let total = 0, monthTotal = 0, wait = 0, work = 0;
+        function calcStats(data) {
+            let total=0, month=0, wait=0, work=0;
             const now = new Date();
             data.forEach(d => {
-                const amt = parseInt(d.amount) || 0;
-                const st = d.status || "";
-                if (!st.includes("キャンセル")) {
+                const amt = parseInt(d.amount)||0;
+                if(!d.status.includes("キャンセル")) {
                     total += amt;
-                    if (new Date(d.lastUpdate).getMonth() === now.getMonth()) monthTotal += amt;
+                    if(new Date(d.lastUpdate).getMonth() === now.getMonth()) month += amt;
                 }
-                if (st.includes("待ち")) wait++;
-                if (st.includes("作業")) work++;
+                if(d.status.includes("待ち")) wait++;
+                if(d.status.includes("作業")) work++;
             });
-            document.getElementById('stat-total').textContent = total.toLocaleString() + "円";
-            document.getElementById('stat-month').textContent = monthTotal.toLocaleString() + "円";
-            document.getElementById('stat-wait').textContent = wait + "件";
-            document.getElementById('stat-work').textContent = work + "件";
+            document.getElementById('stat-total').innerText = total.toLocaleString() + "円";
+            document.getElementById('stat-month').innerText = month.toLocaleString() + "円";
+            document.getElementById('stat-wait').innerText = wait;
+            document.getElementById('stat-work').innerText = work;
         }
 
-        function filterTable(type) {
-            let filtered = globalData;
-            if (type === 'wait') filtered = globalData.filter(d => d.status.includes('待ち'));
-            if (type === 'work') filtered = globalData.filter(d => d.status.includes('作業'));
-            if (type === 'done') filtered = globalData.filter(d => d.status.includes('完了'));
-            renderAdminTable(filtered);
+        // --- 商品管理機能 ---
+        let productData = { nyanko: [], tsumu: [] };
+
+        async function fetchProducts() {
+            const res = await fetch('/.netlify/functions/product-api');
+            productData = await res.json();
+            renderProductList('nyanko', productData.nyanko);
+            renderProductList('tsumu', productData.tsumu);
+        }
+
+        function renderProductList(type, list) {
+            const container = document.getElementById(`list-${type}`);
+            container.innerHTML = "";
+            list.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'product-row';
+                div.innerHTML = `
+                    <input type="text" value="${item.label}" placeholder="商品名" onchange="updateProd('${type}', ${index}, 'label', this.value)">
+                    <input type="number" value="${item.price}" placeholder="価格" onchange="updateProd('${type}', ${index}, 'price', this.value)">
+                    <span>円</span>
+                    <button class="btn btn-danger" onclick="delRow('${type}', ${index})">削除</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateProd(type, index, key, val) {
+            if(key === 'price') val = parseInt(val);
+            productData[type][index][key] = val;
+        }
+
+        function addRow(type) {
+            productData[type].push({ label: "", price: 0 });
+            renderProductList(type, productData[type]);
+        }
+
+        function delRow(type, index) {
+            productData[type].splice(index, 1);
+            renderProductList(type, productData[type]);
+        }
+
+        async function saveProducts() {
+            if(!confirm("商品を保存してBotに反映させますか？")) return;
+            try {
+                const res = await fetch('/.netlify/functions/product-api', {
+                    method: 'POST',
+                    body: JSON.stringify({ password: currentPass, products: productData })
+                });
+                if(res.ok) alert("✅ 保存しました！\nBotのコマンドを更新するにはBotを再起動してください。");
+                else alert("保存失敗");
+            } catch(e) { alert("通信エラー"); }
         }
     </script>
 </body>
