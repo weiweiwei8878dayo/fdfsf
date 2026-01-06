@@ -45,5 +45,17 @@
         "time": "2026/1/5 14:17:58"
       }
     ]
+  },
+  {
+    "userId": "1063813590521495662",
+    "userName": "うが",
+    "status": "支払い確認待ち",
+    "lastUpdate": "2026-01-06T03:03:10.307Z",
+    "item": "猫缶カンスト, XPカンスト, レアチケット(1-10...",
+    "amount": "660",
+    "banOption": "no",
+    "ssUrl": "-",
+    "orderId": "REMIW4BE",
+    "messages": []
   }
 ]
