@@ -2,20 +2,14 @@
   {
     "userId": "1262777743368781834",
     "userName": "たけひこ",
-    "status": "作業中",
-    "lastUpdate": "2026-01-05T15:47:18.844Z",
-    "item": "猫缶カンスト",
-    "amount": "950",
-    "banOption": "yes",
+    "status": "支払い確認待ち",
+    "lastUpdate": "2026-01-06T03:04:05.475Z",
+    "item": "猫缶カンスト, XPカンスト, 通常チケット(1-10...",
+    "amount": "660",
+    "banOption": "no",
     "ssUrl": "-",
-    "orderId": "USTHXRMN",
-    "messages": [
-      {
-        "sender": "Admin",
-        "text": "res",
-        "time": "2026/1/6 0:47:18"
-      }
-    ]
+    "orderId": "Y9ZVA8JA",
+    "messages": []
   },
   {
     "userId": "1144329703084281906",
