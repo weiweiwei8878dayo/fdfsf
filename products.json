@@ -1,0 +1,23 @@
+{
+  "nyanko": [
+    { "label": "猫缶カンスト", "price": 150 },
+    { "label": "XPカンスト", "price": 150 },
+    { "label": "通常チケット(1-100枚)", "price": 180 },
+    { "label": "レアチケット(1-100枚)", "price": 180 },
+    { "label": "全キャラ開放", "price": 1000 },
+    { "label": "ステージ開放", "price": 250 },
+    { "label": "エラーキャラ削除", "price": 1500 },
+    { "label": "NP変更", "price": 750 },
+    { "label": "アイテム変更", "price": 750 },
+    { "label": "キャッツアイ変更", "price": 750 },
+    { "label": "リーダーシップ", "price": 750 },
+    { "label": "城素材変更", "price": 750 },
+    { "label": "マタタビ変更", "price": 750 },
+    { "label": "お宝解放(章ごと)", "price": 750 }
+  ],
+  "tsumu": [
+    { "label": "1億コイン", "price": 300 },
+    { "label": "2000万コイン", "price": 150 },
+    { "label": "プレイヤーレベルMAX", "price": 400 }
+  ]
+}
