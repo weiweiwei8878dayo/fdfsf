@@ -74,7 +74,7 @@
     "userId": "1455876877335003218",
     "userName": ".",
     "status": "作業中",
-    "lastUpdate": "2026-01-08T09:57:34.332Z",
+    "lastUpdate": "2026-01-08T09:58:54.328Z",
     "item": "1億コイン",
     "amount": "300",
     "banOption": "no",
@@ -95,6 +95,11 @@
         "sender": "User",
         "text": "- [ ] W69I0SN9",
         "time": "2026/1/8 18:57:34"
+      },
+      {
+        "sender": "Admin",
+        "text": "SMS認証番号をお願いします！",
+        "time": "2026/1/8 18:58:54"
       }
     ]
   }
